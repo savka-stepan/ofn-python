@@ -3,7 +3,13 @@ import ftplib
 import os
 import re
 import requests
+import smtplib
 import xml.etree.ElementTree as ET
+
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
 class XMLOrderTemplate:
@@ -144,13 +150,13 @@ class XMLOrder(XMLOrderTemplate):
     def __init__(self, server_name):
         self.server_name = server_name
 
-    def _get_order_data(self, order_number, headers, params):
+    def __get_order_data(self, order_number, headers, params):
         '''Get order details.'''
         url = f'{self.server_name}/api/orders/{order_number}'
         response = requests.get(url, headers=headers, params=params)
         return response
 
-    def _make_order_header_correction(self, order):
+    def __make_order_header_correction(self, order):
         '''Make order header correction.'''
         correction = {}
         correction['completed_at'] = dt.datetime.strptime(order['completed_at'], '%B %d, %Y').strftime(
@@ -180,18 +186,18 @@ class XMLOrder(XMLOrderTemplate):
 
         return correction
 
-    def _get_product_data(self, item, headers, params):
+    def __get_product_data(self, item, headers, params):
         '''Get product details.'''
         url = f"{self.server_name}/api/products/bulk_products?q[name_eq]={item['variant']['product_name']}"
         response = requests.get(url, headers=headers, params=params)
         return response
 
-    def _make_order_item_correction(self, item, eans, headers, params):
+    def __make_order_item_correction(self, item, eans, headers, params):
         '''Make order item correction.'''
         correction = {}
 
         # Get manufacturer from product details
-        response = self._get_product_data(item, headers, params)
+        response = self.__get_product_data(item, headers, params)
 
         try:
             product = response.json()['products'][0]
@@ -227,13 +233,13 @@ class XMLOrder(XMLOrderTemplate):
 
         return correction
 
-    def _iterate_items(self, order, eans, headers, params):
+    def __iterate_items(self, order, eans, headers, params):
         '''Iterate through products.'''
         print('Products:')
         skus_wrong_format = []
         for count, item in enumerate(order['line_items'], 1):
             print(item['variant']['sku'])
-            order_item_correction = self._make_order_item_correction(item, eans, headers, params)
+            order_item_correction = self.__make_order_item_correction(item, eans, headers, params)
             # Get all skus with wrong format
             if not re.match(r'\b\w{3}\-\w{3}\-\d{3,}\b', item['variant']['sku']):
                 skus_wrong_format.append({'sku': item['variant']['sku'],
@@ -242,61 +248,93 @@ class XMLOrder(XMLOrderTemplate):
 
         return skus_wrong_format
 
-    def _replace_special_chr(self, ch1, ch2):
+    def __replace_special_chr(self, ch1, ch2):
         '''Replace char1 with char2.'''
         if ch1 in self.xml_str:
             self.xml_str = self.xml_str.replace(ch1, ch2)
 
-    def _send_email_wrong_sku_format(self, skus_wrong_format):
-        '''Send email with wrong sku format'''
-        email_subject = 'SKU Fehler in Münsterländer Bauernbox'
-        email_body = 'Es gab ein paar Fehler mit:'
+    def __send_email(self, receiver, subject, body, filename, attchmnt):
+        '''General send email method.'''
+        smtp_server = os.environ['SMTP_SERVER']
+        port = 465
+        sender_email = os.environ['SMTP_SERVER_USER']
+        password = os.environ['SMTP_SERVER_PASSWORD']
+
+        message = MIMEMultipart()
+        message['From'] = sender_email
+        message['To'] = receiver
+        message['Subject'] = subject
+        message['Bcc'] = receiver
+        message.attach(MIMEText(body, 'plain'))
+
+        if attchmnt:
+            attachment = MIMEBase('application', 'xml')
+            attachment.set_payload(attchmnt)
+            encoders.encode_base64(attachment)
+            attachment.add_header(
+                'Content-Disposition',
+                f'attachment; filename= {filename}',
+            )
+            message.attach(attachment)
+
+        text = message.as_string()
+        with smtplib.SMTP_SSL(smtp_server, port) as server:
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver, text)
+
+    def __send_email_wrong_sku_format(self, skus_wrong_format):
+        '''Send email with wrong sku format.'''
+        receiver = os.environ['EMAIL_HENDIRK_OFN']
+        subject = 'SKU Fehler in Münsterländer Bauernbox'
+        body = 'Es gab ein paar Fehler mit:'
         for sku_wrong_format in skus_wrong_format:
-            email_body += f"<br>SKU {sku_wrong_format['sku']}, von Produzent {sku_wrong_format['producer']}"
-        email_body += '<br>bitte prüfen.'
-        # send_email([os.environ['EMAIL_HENDIRK_OFN']], email_subject, email_body)
+            body += f"<br>SKU {sku_wrong_format['sku']}, von Produzent {sku_wrong_format['producer']}"
+        body += '<br>bitte prüfen.'
+        self.__send_email(receiver, subject, body, None, None)
 
-    def _send_email_zip_not_in_range(self, order, delivery_zip):
+    def __send_email_zip_not_in_range(self, order, delivery_zip):
         '''Send email if zipcode not in certain range.'''
-        email_subject = 'Falsche Postleitzahl in Münsterländer Bauernbox'
-        email_body = f"Bestellnummer {order['number']}, Postleitzahl {delivery_zip}"
-        email_body += '<br>bitte prüfen.'
-        # send_email(os.environ['EMAIL_HENDIRK_OFN']], email_subject, email_body)
+        receiver = os.environ['EMAIL_HENDIRK_OFN']
+        subject = 'Falsche Postleitzahl in Münsterländer Bauernbox'
+        body = f"Bestellnummer {order['number']}, Postleitzahl {delivery_zip}<br>bitte prüfen."
+        self.__send_email(receiver, subject, body, None, None)
 
-    def _send_by_email(self, filename, tree_b_str):
+    def __send_by_email(self, filename, attchmnt):
         '''Send xml file by email.'''
-        print()
-        # send_email([os.environ['EMAIL_OPENTRANSORDERS']], 'Opentransorders', 'Opentransorders xml files:',
-        #     attachment=[filename, tree_b_str, 'application/xml'])
+        receiver = os.environ['EMAIL_OPENTRANSORDERS']
+        subject = 'Opentransorders'
+        body = 'Opentransorders xml files:'
+        self.__send_email(receiver, subject, body, filename, attchmnt)
 
-    def _send_to_ftp_server(self, filename, tree_b_str):
+    def __send_to_ftp_server(self, filename, attchmnt):
         '''Send xml file to ftp server.'''
-        with ftplib.FTP(os.environ['BAUERNBOX_FTP_SERVER'], os.environ['BAUERNBOX_FTP_USERNAME'],
-                os.environ['BAUERNBOX_FTP_PASSWORD']) as ftp:
-            ftp.storbinary(f'STOR orders/{filename}', io.BytesIO(tree_b_str))
+        with ftplib.FTP(os.environ['FTP_SERVER'], os.environ['FTP_USERNAME'],
+                os.environ['FTP_PASSWORD']) as ftp:
+            ftp.storbinary(f'STOR orders/{filename}', io.BytesIO(attchmnt))
 
-    def _save_to_local_storage(self, tree, filename):
+    def __save_to_local_storage(self, tree, filename):
         '''Save to local storage.'''
         tree.write(filename, encoding="utf-8", xml_declaration=True, short_empty_elements=False)
 
     def generate(self, order_number, headers, params, eans, postal_codes):
-        order = self._get_order_data(order_number, headers, params).json()
-        order_header_correction = self._make_order_header_correction(order)
+        '''General method.'''
+        order = self.__get_order_data(order_number, headers, params).json()
+        order_header_correction = self.__make_order_header_correction(order)
         self.xml_str = self._get_order_header(order, order_header_correction)
-        skus_wrong_format = self._iterate_items(order, eans, headers, params)
+        skus_wrong_format = self.__iterate_items(order, eans, headers, params)
         self.xml_str += self._get_order_summary(order)
-        self._replace_special_chr('&', '&amp;')
+        self.__replace_special_chr('&', '&amp;')
 
         if skus_wrong_format:
-            self._send_email_wrong_sku_format(skus_wrong_format)
+            self.__send_email_wrong_sku_format(skus_wrong_format)
 
         if order_header_correction['delivery_zip'] not in postal_codes:
-            self._send_email_zip_not_in_range(order, order_header_correction['delivery_zip'])
+            self.__send_email_zip_not_in_range(order, order_header_correction['delivery_zip'])
 
         filename = f"opentransorder{order['number']}.xml"
         tree = ET.ElementTree(ET.fromstring(self.xml_str, ET.XMLParser(encoding='utf-8')))
         root = tree.getroot()
-        tree_b_str = ET.tostring(root, encoding='utf-8', method='xml')
-        # self._send_by_email(filename, tree_b_str)
-        # self._send_to_ftp_server(filename, tree_b_str)
+        attchmnt = ET.tostring(root, encoding='utf-8', method='xml')
+        self.__send_by_email(filename, attchmnt)
+        self.__send_to_ftp_server(filename, attchmnt)
 
