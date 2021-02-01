@@ -1,4 +1,4 @@
-from ofn_python.lib.xml_order import XMLOrder
+from ofn_python.lib.xml_orders import XMLOrder
 
 import datetime as dt
 import os
@@ -42,7 +42,7 @@ def run():
         'Accept': 'application/json;charset=UTF-8',
         'Content-Type': 'application/json'
     }
-    params = (('token', os.environ['OPEN_FOOD_NETWORK_API_KEY']),)
+    params = (('token', os.environ['OPENFOODNETWORK_API_KEY']),)
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
 
