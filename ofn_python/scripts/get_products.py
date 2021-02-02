@@ -15,7 +15,7 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/spreadsheets'
 ]
-CREDENTIALS_FILE = 'creds/openfoodnetwork-9e79b28ba490.json'
+CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
 
 
 def update_stock_qty(worksheet, sheet_df, variants):
