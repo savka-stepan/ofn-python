@@ -95,3 +95,7 @@ def run():
             orders.fillna('', inplace=True)
             orders_lol = orders.values.tolist()
             worksheet.append_rows(orders_lol)
+
+
+if __name__ == '__main__':
+    run()

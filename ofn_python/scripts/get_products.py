@@ -117,3 +117,7 @@ def run():
                                 get_and_write_new_items(data_i, sheet_df, worksheet)
 
             print('---')
+
+
+if __name__ == '__main__':
+    run()

@@ -284,7 +284,7 @@ class XMLOrder(XMLOrderTemplate):
 
     def __send_email_wrong_sku_format(self, skus_wrong_format):
         '''Send email with wrong sku format.'''
-        receiver = os.environ['EMAIL_HENDIRK_OFN']
+        receiver = os.environ['EMAIL_OFN']
         subject = 'SKU Fehler in Münsterländer Bauernbox'
         body = 'Es gab ein paar Fehler mit:'
         for sku_wrong_format in skus_wrong_format:
@@ -294,7 +294,7 @@ class XMLOrder(XMLOrderTemplate):
 
     def __send_email_zip_not_in_range(self, order, delivery_zip):
         '''Send email if zipcode not in certain range.'''
-        receiver = os.environ['EMAIL_HENDIRK_OFN']
+        receiver = os.environ['EMAIL_OFN']
         subject = 'Falsche Postleitzahl in Münsterländer Bauernbox'
         body = f"Bestellnummer {order['number']}, Postleitzahl {delivery_zip}<br>bitte prüfen."
         self.__send_email(receiver, subject, body, None, None)
