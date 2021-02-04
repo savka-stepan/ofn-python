@@ -40,7 +40,7 @@ To use this project, follow these steps:
     $ export FTP_SERVER=<XXX>
     $ export FTP_USERNAME=<XXX>
     $ export FTP_PASSWORD=<XXX>
-    $ export PATH_TO_OFN_PYTHON=<<XXX>
+    $ export PATH_TO_OFN_PYTHON=<XXX>
     ```
 
 6. Restart environment.
