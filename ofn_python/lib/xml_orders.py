@@ -159,17 +159,47 @@ class XMLOrder(XMLOrderTemplate):
     def __make_order_header_correction(self, order):
         '''Make order header correction.'''
         correction = {}
-        correction['completed_at'] = dt.datetime.strptime(order['completed_at'], '%B %d, %Y').strftime(
-            '%Y-%m-%dT%H:%M:%S')
+        correction['completed_at'] = dt.datetime.strptime(order['completed_at'],
+            '%B %d, %Y').strftime('%Y-%m-%dT%H:%M:%S')
 
-        if 'Boxenstopp Schiffahrter Damm' in order['shipping_method']['name']:
+        if 'Boxenstopp Schiffahrter Damm' == order['shipping_method']['name']:
             correction['transport_location'] = 'IBS BüroTipp!, Schiffahrter Damm 24, 48145 Münster'
             correction['delivery_street'] = 'Schiffahrter Damm 24'
             correction['delivery_zip'] = '48145'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Albachten' in order['shipping_method']['name']:
+        elif 'Boxenstopp Schiffahrter Damm (kostenlos)' == order['shipping_method']['name']:
+            correction['transport_location'] = 'IBS Laden, Schiffahrter Damm 24, 48145 Münster'
+            correction['delivery_street'] = 'Schiffahrter Damm 24'
+            correction['delivery_zip'] = '48145'
+            correction['delivery_city'] = 'Münster'
+        elif 'Boxenstopp Albachten' == order['shipping_method']['name']:
             correction['transport_location'] = 'Hofladen Freitag, Sendener Stiege 32, 48163 Münster'
             correction['delivery_street'] = 'Sendener Stiege 32'
+            correction['delivery_zip'] = '48163'
+            correction['delivery_city'] = 'Münster'
+        elif 'Boxenstopp Albachten (kostenlos)' == order['shipping_method']['name']:
+            correction['transport_location'] = 'Hofladen Freitag, Sendener Stiege 32, 48163 Münster'
+            correction['delivery_street'] = 'Sendener Stiege 32'
+            correction['delivery_zip'] = '48163'
+            correction['delivery_city'] = 'Münster'
+        elif 'Boxenstopp Innenstadt/Alter Steinweg (kostenlos)' == order['shipping_method']['name']:
+            correction['transport_location'] = 'Auenhof Laden, Alter Steinweg 39, 48143 Münster'
+            correction['delivery_street'] = 'Alter Steinweg 39'
+            correction['delivery_zip'] = '48143'
+            correction['delivery_city'] = 'Münster'
+        elif 'Boxenstopp Roxel (kostenlos)' == order['shipping_method']['name']:
+            correction['transport_location'] = 'Lager, Im Derdel 18, 48161 Münster'
+            correction['delivery_street'] = 'Im Derdel 18'
+            correction['delivery_zip'] = '48161'
+            correction['delivery_city'] = 'Münster'
+        elif 'Boxenstopp Wolbecker Str./ Fleischerei Hidding' == order['shipping_method']['name']:
+            correction['transport_location'] = 'Fleischerei Hidding, Sendener Stiege 32, 48155 Münster'
+            correction['delivery_street'] = 'Sendener Stiege 32'
+            correction['delivery_zip'] = '48155'
+            correction['delivery_city'] = 'Münster'
+        elif 'Boxenstopp Weseler Str./ Tankstelle Schmitz' == order['shipping_method']['name']:
+            correction['transport_location'] = 'Tankstelle Schmitz, Weseler Str. 383, 48163 Münster'
+            correction['delivery_street'] = 'Weseler Str. 383'
             correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
         else:
