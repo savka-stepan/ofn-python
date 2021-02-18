@@ -162,7 +162,7 @@ class XMLOrder(XMLOrderTemplate):
         correction['completed_at'] = dt.datetime.strptime(order['completed_at'],
             '%B %d, %Y').strftime('%Y-%m-%dT%H:%M:%S')
 
-        if 'Boxenstopp Schiffahrter Damm' == order['shipping_method']['name']:
+        if 'Boxenstopp Schiffahrter Damm ' == order['shipping_method']['name']:
             correction['transport_location'] = 'IBS BüroTipp!, Schiffahrter Damm 24, 48145 Münster'
             correction['delivery_street'] = 'Schiffahrter Damm 24'
             correction['delivery_zip'] = '48145'
@@ -172,17 +172,12 @@ class XMLOrder(XMLOrderTemplate):
             correction['delivery_street'] = 'Schiffahrter Damm 24'
             correction['delivery_zip'] = '48145'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Albachten' == order['shipping_method']['name']:
+        elif 'Boxenstopp Albachten' in order['shipping_method']['name']:
             correction['transport_location'] = 'Hofladen Freitag, Sendener Stiege 32, 48163 Münster'
             correction['delivery_street'] = 'Sendener Stiege 32'
             correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Albachten (kostenlos)' == order['shipping_method']['name']:
-            correction['transport_location'] = 'Hofladen Freitag, Sendener Stiege 32, 48163 Münster'
-            correction['delivery_street'] = 'Sendener Stiege 32'
-            correction['delivery_zip'] = '48163'
-            correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Innenstadt/Alter Steinweg (kostenlos)' == order['shipping_method']['name']:
+        elif 'Boxenstopp Innenstadt/Alter Steinweg' in order['shipping_method']['name']:
             correction['transport_location'] = 'Auenhof Laden, Alter Steinweg 39, 48143 Münster'
             correction['delivery_street'] = 'Alter Steinweg 39'
             correction['delivery_zip'] = '48143'
