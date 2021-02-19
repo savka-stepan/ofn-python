@@ -194,8 +194,8 @@ class XMLOrder(XMLOrderTemplate):
             correction['delivery_zip'] = '48155'
             correction['delivery_city'] = 'Münster'
         elif 'Boxenstopp Weseler Str./ Tankstelle Schmitz' == order['shipping_method']['name']:
-            correction['transport_location'] = 'Tankstelle Schmitz, Weseler Str. 383, 48163 Münster'
-            correction['delivery_street'] = 'Weseler Str. 383'
+            correction['transport_location'] = 'Markant Tankstelle Schmidt, Harkortstr. 4, 48163 Münster'
+            correction['delivery_street'] = 'Harkortstr. 4'
             correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
         else:
