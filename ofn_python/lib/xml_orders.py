@@ -169,14 +169,14 @@ class XMLOrder(XMLOrderTemplate):
             correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
         elif 'Boxenstopp Harkortstr.4 / Markant Tankstelle' in order['shipping_method']['name']:
-            correction['transport_location'] = 'Markant Tankstelle Schmidt, Im Derdel 18-24, 48161 Münster'
-            correction['delivery_street'] = 'Im Derdel 18-24'
-            correction['delivery_zip'] = '48161'
+            correction['transport_location'] = 'Markant Tankstelle Schmidt, Harkortstr.4, 48163 Münster'
+            correction['delivery_street'] = 'Harkortstr.4'
+            correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
         elif 'Boxenstopp Innenstadt/Alter Steinweg' in order['shipping_method']['name']:
-            correction['transport_location'] = 'Auenhof Laden, Im Derdel 18-24, 48161 Münster'
-            correction['delivery_street'] = 'Im Derdel 18-24'
-            correction['delivery_zip'] = '48161'
+            correction['transport_location'] = 'Auenhof Laden, Alter Steinweg 39, 48143 Münster'
+            correction['delivery_street'] = 'Alter Steinweg 39'
+            correction['delivery_zip'] = '48143'
             correction['delivery_city'] = 'Münster'
         elif 'Boxenstopp Roxel' in order['shipping_method']['name']:
             correction['transport_location'] = 'Lager, Im Derdel 18, 48161 Münster'
