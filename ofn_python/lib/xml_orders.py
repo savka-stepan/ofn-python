@@ -163,40 +163,30 @@ class XMLOrder(XMLOrderTemplate):
         correction['completed_at'] = dt.datetime.strptime(order['completed_at'],
             '%B %d, %Y').strftime('%Y-%m-%dT%H:%M:%S')
 
-        if 'Boxenstopp Schiffahrter Damm ' == order['shipping_method']['name']:
-            correction['transport_location'] = 'IBS BüroTipp!, Schiffahrter Damm 24, 48145 Münster'
-            correction['delivery_street'] = 'Schiffahrter Damm 24'
-            correction['delivery_zip'] = '48145'
-            correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Schiffahrter Damm (kostenlos)' == order['shipping_method']['name']:
-            correction['transport_location'] = 'IBS Laden, Schiffahrter Damm 24, 48145 Münster'
-            correction['delivery_street'] = 'Schiffahrter Damm 24'
-            correction['delivery_zip'] = '48145'
-            correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Albachten' in order['shipping_method']['name']:
+        if 'Boxenstopp Albachten' in order['shipping_method']['name']:
             correction['transport_location'] = 'Hofladen Freitag, Sendener Stiege 32, 48163 Münster'
             correction['delivery_street'] = 'Sendener Stiege 32'
             correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Innenstadt/Alter Steinweg' in order['shipping_method']['name']:
-            correction['transport_location'] = 'Auenhof Laden, Alter Steinweg 39, 48143 Münster'
-            correction['delivery_street'] = 'Alter Steinweg 39'
-            correction['delivery_zip'] = '48143'
+        elif 'Boxenstopp Harkortstr.4 / Markant Tankstelle' in order['shipping_method']['name']:
+            correction['transport_location'] = 'Markant Tankstelle Schmidt, Im Derdel 18-24, 48161 Münster'
+            correction['delivery_street'] = 'Im Derdel 18-24'
+            correction['delivery_zip'] = '48161'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Roxel (kostenlos)' == order['shipping_method']['name']:
+        elif 'Boxenstopp Innenstadt/Alter Steinweg' in order['shipping_method']['name']:
+            correction['transport_location'] = 'Auenhof Laden, Im Derdel 18-24, 48161 Münster'
+            correction['delivery_street'] = 'Im Derdel 18-24'
+            correction['delivery_zip'] = '48161'
+            correction['delivery_city'] = 'Münster'
+        elif 'Boxenstopp Roxel' in order['shipping_method']['name']:
             correction['transport_location'] = 'Lager, Im Derdel 18, 48161 Münster'
             correction['delivery_street'] = 'Im Derdel 18'
             correction['delivery_zip'] = '48161'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Wolbecker Str./ Fleischerei Hidding' == order['shipping_method']['name']:
-            correction['transport_location'] = 'Fleischerei Hidding, Sendener Stiege 32, 48155 Münster'
-            correction['delivery_street'] = 'Sendener Stiege 32'
-            correction['delivery_zip'] = '48155'
-            correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Weseler Str./ Tankstelle Schmitz' == order['shipping_method']['name']:
-            correction['transport_location'] = 'Markant Tankstelle Schmidt, Harkortstr. 4, 48163 Münster'
-            correction['delivery_street'] = 'Harkortstr. 4'
-            correction['delivery_zip'] = '48163'
+        elif 'Boxenstopp Schiffahrter Damm' in order['shipping_method']['name']:
+            correction['transport_location'] = 'IBS Laden, Schiffahrter Damm 24, 48145 Münster'
+            correction['delivery_street'] = 'Schiffahrter Damm 24'
+            correction['delivery_zip'] = '48145'
             correction['delivery_city'] = 'Münster'
         else:
             correction['transport_location'] = f"{order['ship_address']['firstname']} {order['ship_address']['lastname']}, {order['ship_address']['address1']}, {order['ship_address']['zipcode']} {order['ship_address']['city']}"
