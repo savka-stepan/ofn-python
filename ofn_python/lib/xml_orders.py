@@ -341,16 +341,16 @@ class XMLOrder(XMLOrderTemplate):
         self.xml_str += self._get_order_summary(order)
         self.__replace_special_chr('&', '&amp;')
 
-        # if skus_wrong_format:
-        #     self.__send_email_wrong_sku_format(skus_wrong_format)
+        if skus_wrong_format:
+            self.__send_email_wrong_sku_format(skus_wrong_format)
 
-        # if order_header_correction['delivery_zip'] not in postal_codes:
-        #     self.__send_email_zip_not_in_range(order, order_header_correction['delivery_zip'])
+        if order_header_correction['delivery_zip'] not in postal_codes:
+            self.__send_email_zip_not_in_range(order, order_header_correction['delivery_zip'])
 
         filename = f"opentransorder{order['number']}.xml"
         tree = ET.ElementTree(ET.fromstring(self.xml_str, ET.XMLParser(encoding='utf-8')))
         root = tree.getroot()
         attchmnt = ET.tostring(root, encoding='utf-8', method='xml')
-        # self.__send_by_email(filename, attchmnt)
+        self.__send_by_email(filename, attchmnt)
         self.__send_to_ftp_server(filename, attchmnt)
 
