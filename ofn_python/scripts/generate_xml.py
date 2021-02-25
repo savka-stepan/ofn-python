@@ -53,7 +53,7 @@ def run():
         worksheet = client.open('Bauernbox Übersicht').sheet1
         all_records = worksheet.get_all_records()
         sheet_df = pd.DataFrame(all_records)
-        orders = orders[~orders['number'].isin(sheet_df['number'].tolist())].reset_index(drop=True)
+        # orders = orders[~orders['number'].isin(sheet_df['number'].tolist())].reset_index(drop=True)
 
         if not orders.empty:
             orders = orders[['id', 'number', 'user_id', 'full_name', 'email', 'phone',
@@ -77,24 +77,24 @@ def run():
                 orders.at[i.Index, 'xml_generated_at'] = dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
                 print('---')
 
-            orders['payments_path'] = orders['payments_path'].apply(lambda x: ofn_server_name + x)
-            orders['edit_path'] = orders['edit_path'].apply(lambda x: ofn_server_name + x)
-            orders['created_at'] = orders['created_at'].apply(lambda x: dt.datetime.strptime(x,
-                '%B %d, %Y').strftime('%Y-%m-%d'))
-            orders['completed_at'] = orders['completed_at'].apply(lambda x:
-                dt.datetime.strptime(x, '%B %d, %Y').strftime('%Y-%m-%d'))
-            orders['ready_to_capture'] = ''
-            orders = orders[['id', 'number', 'user_id', 'full_name', 'email', 'phone',
-            'completed_at', 'display_total', 'edit_path', 'state', 'payment_state',
-            'shipment_state', 'payments_path', 'ready_to_ship', 'ready_to_capture',
-            'created_at', 'distributor_name', 'special_instructions',
-            'display_outstanding_balance','item_total', 'adjustment_total', 'payment_total',
-            'total', 'distributor_id', 'order_cycle_id', 'xml_generated_at']]
+        #     orders['payments_path'] = orders['payments_path'].apply(lambda x: ofn_server_name + x)
+        #     orders['edit_path'] = orders['edit_path'].apply(lambda x: ofn_server_name + x)
+        #     orders['created_at'] = orders['created_at'].apply(lambda x: dt.datetime.strptime(x,
+        #         '%B %d, %Y').strftime('%Y-%m-%d'))
+        #     orders['completed_at'] = orders['completed_at'].apply(lambda x:
+        #         dt.datetime.strptime(x, '%B %d, %Y').strftime('%Y-%m-%d'))
+        #     orders['ready_to_capture'] = ''
+        #     orders = orders[['id', 'number', 'user_id', 'full_name', 'email', 'phone',
+        #     'completed_at', 'display_total', 'edit_path', 'state', 'payment_state',
+        #     'shipment_state', 'payments_path', 'ready_to_ship', 'ready_to_capture',
+        #     'created_at', 'distributor_name', 'special_instructions',
+        #     'display_outstanding_balance','item_total', 'adjustment_total', 'payment_total',
+        #     'total', 'distributor_id', 'order_cycle_id', 'xml_generated_at']]
 
-            # Save new orders to Bauernbox Übersicht google table
-            orders.fillna('', inplace=True)
-            orders_lol = orders.values.tolist()
-            worksheet.append_rows(orders_lol)
+        #     # Save new orders to Bauernbox Übersicht google table
+        #     orders.fillna('', inplace=True)
+        #     orders_lol = orders.values.tolist()
+        #     worksheet.append_rows(orders_lol)
 
 
 if __name__ == '__main__':
