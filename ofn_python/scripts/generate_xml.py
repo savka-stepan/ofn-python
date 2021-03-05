@@ -17,7 +17,7 @@ SCOPES = [
 CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
 
 
-def get_data_from_google_sheet(filename):
+def get_data_from_google_sheet(filename, columns):
     creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
     client = gspread.authorize(creds)
     sheet = client.open(filename)
@@ -27,9 +27,9 @@ def get_data_from_google_sheet(filename):
     for worksheet in worksheet_list:
         sheet_df = pd.DataFrame(worksheet.get_all_records())
         try:
-            sheet_df = sheet_df[['sku', 'tax_category', 'EAN']]
+            sheet_df = sheet_df[columns]
         except KeyError:
-            sheet_df = pd.DataFrame(columns=['sku', 'tax_category', 'EAN'])
+            sheet_df = pd.DataFrame(columns=columns)
         data = data.append(sheet_df, ignore_index=True)
 
     return data
@@ -66,7 +66,8 @@ def run():
                 'order_cycle.id': 'order_cycle_id'}, inplace=True)
 
             ofn_server_name = 'https://openfoodnetwork.de'
-            eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten')
+            eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten',
+                ['sku', 'tax_category', 'EAN'])
             postal_codes = ['48143', '48147', '48145', '48157', '48159', '48151', '48155', '48153',
             '48161', '48167', '48165', '48163', '48149']
 
