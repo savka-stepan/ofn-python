@@ -67,7 +67,7 @@ def run():
 
             ofn_server_name = 'https://openfoodnetwork.de'
             eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten',
-                ['sku', 'tax_category', 'EAN'])
+                ['sku', 'EAN'])
             postal_codes = ['48143', '48147', '48145', '48157', '48159', '48151', '48155', '48153',
             '48161', '48167', '48165', '48163', '48149']
 

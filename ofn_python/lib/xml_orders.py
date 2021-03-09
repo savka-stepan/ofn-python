@@ -125,8 +125,8 @@ class XMLOrderTemplate:
         <bmecat:CALCULATION_SEQUENCE>1</bmecat:CALCULATION_SEQUENCE>
         <bmecat:TAX_CATEGORY>{correction['tax_category']}</bmecat:TAX_CATEGORY>
         <bmecat:TAX_TYPE>vat</bmecat:TAX_TYPE>
-        <bmecat:TAX>0.0</bmecat:TAX>
-        <TAX_AMOUNT>0.0</TAX_AMOUNT>
+        <bmecat:TAX>{correction['tax_rate']}</bmecat:TAX>
+        <TAX_AMOUNT>{round(float(item['price']) * float(correction['tax_rate']) / 100.0, 2)}</TAX_AMOUNT>
         <TAX_BASE>0.0</TAX_BASE>
     </TAX_DETAILS_FIX>
 </PRODUCT_PRICE_FIX>
@@ -212,7 +212,6 @@ class XMLOrder(XMLOrderTemplate):
         '''Make order item correction.'''
         correction = {}
 
-        # Get manufacturer from product details
         response = self.__get_product_data(item, headers, params)
 
         try:
@@ -221,24 +220,43 @@ class XMLOrder(XMLOrderTemplate):
             product = None
 
         if product:
+            # Get manufacturer
             correction['manufacturer_idref'] = product['producer_id']
             correction['manufacturer_pid'] = product['variants'][0]['producer_name']
+
+            # Get tax
+            tax_category_id = product['tax_category_id']
+
+            if tax_category_id == 1:
+                tax_category = 'MwSt.-19'
+                tax_rate = '19.00'
+            elif tax_category_id == 2:
+                tax_category = 'MwSt.-7'
+                tax_rate = '7.00'
+            elif tax_category_id == 3:
+                tax_category = 'MwSt.-10'
+                tax_rate = '10.70'
+
+            correction['tax_category'] = tax_category
+            correction['tax_rate'] = tax_rate
+
         else:
+            # Get manufacturer
             correction['manufacturer_idref'] = ''
             correction['manufacturer_pid'] = ''
+            # Get tax
+            correction['tax_category'] = 'MwSt.-'
+            correction['tax_rate'] = '0.00'
 
-        # Get EAN and tax category from google sheet
+        # Get EAN from google sheet
         found_sku = eans.loc[eans['sku'] == item['variant']['sku']]
         if not found_sku.empty:
-            correction['tax_category'] = f"{found_sku.iloc[0]['tax_category']}"
             found_ean = found_sku.iloc[0]['EAN']
-
             if found_ean == '':
                 correction['ean'] = item['variant']['sku']
             else:
                 correction['ean'] = found_ean
         else:
-            correction['tax_category'] = ''
             correction['ean'] = item['variant']['sku']
 
         # Fix product display name
