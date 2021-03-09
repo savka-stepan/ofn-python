@@ -236,6 +236,9 @@ class XMLOrder(XMLOrderTemplate):
             elif tax_category_id == 3:
                 tax_category = 'MwSt.-10'
                 tax_rate = '10.70'
+            else:
+                tax_category = 'MwSt.-'
+                tax_rate = '0.00'
 
             correction['tax_category'] = tax_category
             correction['tax_rate'] = tax_rate

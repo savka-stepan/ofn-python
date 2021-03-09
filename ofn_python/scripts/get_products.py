@@ -43,6 +43,19 @@ def get_and_write_new_items(data, sheet_df, worksheet):
         'display_name', 'unit_value', 'unit_to_display', 'price', 'on_hand', 'on_demand']]
         temp['variant_unit'] = product['variant_unit']
         temp['available_on'] = product['available_on']
+
+        tax_category_id = product['tax_category_id']
+        if tax_category_id == 1:
+            tax_category = 'MwSt.-19'
+        elif tax_category_id == 2:
+            tax_category = 'MwSt.-7'
+        elif tax_category_id == 3:
+            tax_category = 'MwSt.-10'
+        else:
+            tax_category = 'MwSt.-'
+
+        temp['tax_category'] = tax_category
+
         res_df = pd.concat([variants, temp], sort=False).reset_index(drop=True)
         variants = res_df
 
@@ -58,7 +71,6 @@ def get_and_write_new_items(data, sheet_df, worksheet):
         variants['unit_to_display'] = variants['unit_to_display'].apply(lambda x:
             re.sub(r'\d+', '', x))
         variants['shipping_category'] = ''
-        variants['tax_category'] = ''
         variants['EAN'] = ''
 
         variants = variants[['producer_name', 'sku', 'name', 'display_name', 'category',
