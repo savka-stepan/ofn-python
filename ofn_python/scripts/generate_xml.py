@@ -51,8 +51,7 @@ def run():
         creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
         client = gspread.authorize(creds)
         worksheet = client.open('Bauernbox Übersicht').sheet1
-        all_records = worksheet.get_all_records()
-        sheet_df = pd.DataFrame(all_records)
+        sheet_df = pd.DataFrame(worksheet.get_all_records())
         orders = orders[~orders['number'].isin(sheet_df['number'].tolist())].reset_index(drop=True)
 
         if not orders.empty:
@@ -94,8 +93,7 @@ def run():
 
             # Save new orders to Bauernbox Übersicht google table
             orders.fillna('', inplace=True)
-            orders_lol = orders.values.tolist()
-            worksheet.append_rows(orders_lol)
+            worksheet.append_rows(orders.values.tolist())
 
 
 if __name__ == '__main__':
