@@ -1,7 +1,9 @@
 import datetime as dt
 import ftplib
+import gspread
 import io
 import os
+import pandas as pd
 import re
 import requests
 import smtplib
@@ -11,211 +13,119 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from oauth2client.service_account import ServiceAccountCredentials
+
+from ofn_python.xml_templates.xml_template import get_xml_header, get_xml_body, get_xml_footer
 
 
-class XMLOrderTemplate:
-
-    def __init__(self):
-        pass
-
-    def _get_order_header(self, order, correction):
-        return f"""<?xml version="1.0" encoding="UTF-8"?>
-<ORDER type="standard" version="2.1" xmlns="http://www.opentrans.org/XMLSchema/2.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.opentrans.org/XMLSchema/2.1 opentrans_2_1.xsd" xmlns:bmecat="http://www.bmecat.org/bmecat/2005" xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsig="http://www.w3.org/2000/09/xmldsig#">
-<ORDER_HEADER>
-<CONTROL_INFO>
-<GENERATOR_INFO></GENERATOR_INFO>
-<GENERATION_DATE></GENERATION_DATE>
-</CONTROL_INFO>
-<ORDER_INFO>
-<ORDER_ID>{order['number']}</ORDER_ID>
-<ORDER_DATE>{correction['completed_at']}</ORDER_DATE>
-<PARTIES>
-    <PARTY>
-        <bmecat:PARTY_ID type="buyer_specific">{order['user_id']}</bmecat:PARTY_ID>
-        <PARTY_ROLE>buyer</PARTY_ROLE>
-        <ADDRESS>
-            <bmecat:NAME>{order['full_name']}</bmecat:NAME>
-            <bmecat:STREET>{order['bill_address']['address1']}</bmecat:STREET>
-            <bmecat:ZIP>{order['bill_address']['zipcode']}</bmecat:ZIP>
-            <bmecat:CITY>{order['bill_address']['city']}</bmecat:CITY>
-            <bmecat:STATE>{order['bill_address']['state_name']}</bmecat:STATE>
-            <bmecat:COUNTRY>{order['bill_address']['country_name']}</bmecat:COUNTRY>
-            <bmecat:COUNTRY_CODED>DE</bmecat:COUNTRY_CODED>
-            <bmecat:PHONE type="office">{order['phone']}</bmecat:PHONE>
-            <bmecat:EMAIL>{order['email']}</bmecat:EMAIL>
-        </ADDRESS>
-    </PARTY>
-    <PARTY>
-        <bmecat:PARTY_ID type="supplier_specific">{order['user_id']}</bmecat:PARTY_ID>
-        <PARTY_ROLE>supplier</PARTY_ROLE>
-        <ADDRESS>
-            <bmecat:STREET></bmecat:STREET>
-            <bmecat:STREET></bmecat:STREET>
-            <bmecat:ZIP></bmecat:ZIP>
-            <bmecat:CITY></bmecat:CITY>
-            <bmecat:STATE></bmecat:STATE>
-            <bmecat:COUNTRY></bmecat:COUNTRY>
-            <bmecat:COUNTRY_CODED>DE</bmecat:COUNTRY_CODED>
-            <bmecat:PHONE type="office"></bmecat:PHONE>
-            <bmecat:EMAIL></bmecat:EMAIL>
-        </ADDRESS>
-    </PARTY>
-    <PARTY>
-        <bmecat:PARTY_ID type="delivery_specific">{order['ship_address']['id']}</bmecat:PARTY_ID>
-        <PARTY_ROLE>delivery</PARTY_ROLE>
-        <ADDRESS>
-            <bmecat:NAME>{order['ship_address']['firstname']} {order['ship_address']['lastname']}</bmecat:NAME>
-            <bmecat:STREET>{correction['delivery_street']}</bmecat:STREET>
-            <bmecat:ZIP>{correction['delivery_zip']}</bmecat:ZIP>
-            <bmecat:CITY>{correction['delivery_city']}</bmecat:CITY>
-            <bmecat:STATE>{order['ship_address']['state_name']}</bmecat:STATE>
-            <bmecat:COUNTRY>{order['ship_address']['country_name']}</bmecat:COUNTRY>
-            <bmecat:COUNTRY_CODED>DE</bmecat:COUNTRY_CODED>
-            <bmecat:PHONE type="office">{order['ship_address']['phone']}</bmecat:PHONE>
-            <bmecat:EMAIL>{order['email']}</bmecat:EMAIL>
-        </ADDRESS>
-    </PARTY>
-</PARTIES>
-<CUSTOMER_ORDER_REFERENCE>
-    <ORDER_ID>{order['number']}</ORDER_ID>
-    <ORDER_DATE>{correction['completed_at']}</ORDER_DATE>
-    <CUSTOMER_IDREF type="buyer_specific">{order['user_id']}</CUSTOMER_IDREF>
-</CUSTOMER_ORDER_REFERENCE>
-<ORDER_PARTIES_REFERENCE>
-    <bmecat:BUYER_IDREF type="buyer_specific">{order['user_id']}</bmecat:BUYER_IDREF>
-    <bmecat:SUPPLIER_IDREF type="supplier_specific">{order['distributor']['id']}</bmecat:SUPPLIER_IDREF>
-    <INVOICE_RECIPIENT_IDREF type="buyer_specific">{order['user_id']}</INVOICE_RECIPIENT_IDREF>
-    <SHIPMENT_PARTIES_REFERENCE>
-        <DELIVERER_IDREF type="delivery_specific">{order['user_id']}</DELIVERER_IDREF>
-    </SHIPMENT_PARTIES_REFERENCE>
-</ORDER_PARTIES_REFERENCE>
-<bmecat:CURRENCY>EUR</bmecat:CURRENCY>
-<PARTIAL_SHIPMENT_ALLOWED>TRUE</PARTIAL_SHIPMENT_ALLOWED>
-<bmecat:TRANSPORT>
-    <bmecat:INCOTERM></bmecat:INCOTERM>
-    <bmecat:LOCATION>{correction['transport_location']}</bmecat:LOCATION>
-    <bmecat:TRANSPORT_REMARK>{order['shipping_method']['name']}</bmecat:TRANSPORT_REMARK>
-</bmecat:TRANSPORT>
-<REMARKS type="customType">{correction['remarks']}</REMARKS>
-</ORDER_INFO>
-</ORDER_HEADER>
-<ORDER_ITEM_LIST>"""
-
-    def _get_order_item(self, item, count, order, correction):
-        return f"""
-<ORDER_ITEM>
-<LINE_ITEM_ID>{count}</LINE_ITEM_ID>
-<PRODUCT_ID>
-    <bmecat:SUPPLIER_PID type="supplier_specific">{item['variant']['sku']}</bmecat:SUPPLIER_PID>
-    <bmecat:SUPPLIER_IDREF type="supplier_specific">{order['distributor']['id']}</bmecat:SUPPLIER_IDREF>
-    <bmecat:INTERNATIONAL_PID type="ean">{correction['ean']}</bmecat:INTERNATIONAL_PID>
-    <bmecat:BUYER_PID type="buyer_specific">{order['user_id']}</bmecat:BUYER_PID>
-    <bmecat:DESCRIPTION_SHORT lang="deu">{correction['description_short']}</bmecat:DESCRIPTION_SHORT>
-    <MANUFACTURER_INFO>
-        <bmecat:MANUFACTURER_IDREF type="manufacturer_specific">{correction['manufacturer_idref']}</bmecat:MANUFACTURER_IDREF>
-        <bmecat:MANUFACTURER_PID>{correction['manufacturer_pid']}</bmecat:MANUFACTURER_PID>
-        <bmecat:MANUFACTURER_TYPE_DESCR lang="eng"></bmecat:MANUFACTURER_TYPE_DESCR>
-    </MANUFACTURER_INFO>
-    </PRODUCT_ID>
-<QUANTITY>{item['quantity']}</QUANTITY>
-<bmecat:ORDER_UNIT></bmecat:ORDER_UNIT>
-<PRODUCT_PRICE_FIX>
-    <bmecat:PRICE_AMOUNT>{item['price']}</bmecat:PRICE_AMOUNT>
-    <TAX_DETAILS_FIX>
-        <bmecat:CALCULATION_SEQUENCE>1</bmecat:CALCULATION_SEQUENCE>
-        <bmecat:TAX_CATEGORY>{correction['tax_category']}</bmecat:TAX_CATEGORY>
-        <bmecat:TAX_TYPE>vat</bmecat:TAX_TYPE>
-        <bmecat:TAX>{correction['tax_rate']}</bmecat:TAX>
-        <TAX_AMOUNT>{round(float(item['price']) * float(correction['tax_rate']) / 100.0, 2)}</TAX_AMOUNT>
-        <TAX_BASE>0.0</TAX_BASE>
-    </TAX_DETAILS_FIX>
-</PRODUCT_PRICE_FIX>
-<PRICE_LINE_AMOUNT>{float(item['price']) * float(item['quantity'])}</PRICE_LINE_AMOUNT>
-<REMARKS type="customRemark" lang="deu"></REMARKS>
-</ORDER_ITEM>"""
-
-    def _get_order_summary(self, order):
-        return f"""
-</ORDER_ITEM_LIST>
-<ORDER_SUMMARY>
-<TOTAL_ITEM_NUM>{len(order['line_items'])}</TOTAL_ITEM_NUM>
-<TOTAL_AMOUNT>{order['total']}</TOTAL_AMOUNT>
-</ORDER_SUMMARY>
-</ORDER>"""
+SCOPES = [
+    'https://spreadsheets.google.com/feeds',
+    'https://www.googleapis.com/auth/drive',
+    'https://www.googleapis.com/auth/spreadsheets'
+]
+CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
 
 
-class XMLOrder(XMLOrderTemplate):
+def get_data_from_google_sheet(filename, columns):
+    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
+    client = gspread.authorize(creds)
+    sheet = client.open(filename)
+    worksheet_list = sheet.worksheets()
 
-    xml_str = ''
+    data = pd.DataFrame()
+    for worksheet in worksheet_list:
+        sheet_df = pd.DataFrame(worksheet.get_all_records())
+        try:
+            sheet_df = sheet_df[columns]
+        except KeyError:
+            sheet_df = pd.DataFrame(columns=columns)
+        data = data.append(sheet_df, ignore_index=True)
+
+    return data
+
+
+class XMLOrder:
+
+    server_name = 'https://openfoodnetwork.de'
+    headers = {
+        'Accept': 'application/json;charset=UTF-8',
+        'Content-Type': 'application/json'
+    }
+    params = (('token', os.environ['OPENFOODNETWORK_API_KEY']),)
+    eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten', ['sku', 'EAN'])
+    postal_codes = ['48143', '48147', '48145', '48157', '48159', '48151', '48155', '48153', '48161',
+    '48167', '48165', '48163', '48149']
     
-    def __init__(self, server_name):
-        self.server_name = server_name
+    def __init__(self, order_no):
+        self.xml_str = ''
+        self.order_no = order_no
+        self.order_data = {}
 
-    def __get_order_data(self, order_number, headers, params):
+    def __get_order_data(self):
         '''Get order details.'''
-        url = f'{self.server_name}/api/orders/{order_number}'
-        response = requests.get(url, headers=headers, params=params)
-        return response
+        url = f'{self.server_name}/api/orders/{self.order_no}'
+        response = requests.get(url, headers=self.headers, params=self.params)
+        self.order_data = response.json()
 
-    def __make_order_header_correction(self, order):
+    def __make_order_header_correction(self):
         '''Make order header correction.'''
         correction = {}
-        correction['completed_at'] = dt.datetime.strptime(order['completed_at'],
+        correction['completed_at'] = dt.datetime.strptime(self.order_data['completed_at'],
             '%B %d, %Y').strftime('%Y-%m-%dT%H:%M:%S')
 
-        if 'Boxenstopp Albachten' in order['shipping_method']['name']:
-            correction['transport_location'] = f"{order['ship_address']['firstname']} {order['ship_address']['lastname']}, Hofladen Freitag, Sendener Stiege 32, 48163 Münster"
+        if 'Boxenstopp Albachten' in self.order_data['shipping_method']['name']:
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Hofladen Freitag, Sendener Stiege 32, 48163 Münster"
             correction['delivery_street'] = 'Sendener Stiege 32'
             correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Harkortstr.4 / Markant Tankstelle' in order['shipping_method']['name']:
-            correction['transport_location'] = f"{order['ship_address']['firstname']} {order['ship_address']['lastname']}, Markant Tankstelle Schmidt, Harkortstr.4, 48163 Münster"
+        elif 'Boxenstopp Harkortstr.4 / Markant Tankstelle' in self.order_data['shipping_method']['name']:
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Markant Tankstelle Schmidt, Harkortstr.4, 48163 Münster"
             correction['delivery_street'] = 'Harkortstr.4'
             correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Innenstadt/Alter Steinweg' in order['shipping_method']['name']:
-            correction['transport_location'] = f"{order['ship_address']['firstname']} {order['ship_address']['lastname']}, Auenhof Laden, Alter Steinweg 39, 48143 Münster"
+        elif 'Boxenstopp Innenstadt/Alter Steinweg' in self.order_data['shipping_method']['name']:
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Auenhof Laden, Alter Steinweg 39, 48143 Münster"
             correction['delivery_street'] = 'Alter Steinweg 39'
             correction['delivery_zip'] = '48143'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Roxel' in order['shipping_method']['name']:
-            correction['transport_location'] = f"{order['ship_address']['firstname']} {order['ship_address']['lastname']}, Lager, Im Derdel 18, 48161 Münster"
+        elif 'Boxenstopp Roxel' in self.order_data['shipping_method']['name']:
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Lager, Im Derdel 18, 48161 Münster"
             correction['delivery_street'] = 'Im Derdel 18'
             correction['delivery_zip'] = '48161'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Schiffahrter Damm' in order['shipping_method']['name']:
-            correction['transport_location'] = f"{order['ship_address']['firstname']} {order['ship_address']['lastname']}, IBS Laden, Schiffahrter Damm 24, 48145 Münster"
+        elif 'Boxenstopp Schiffahrter Damm' in self.order_data['shipping_method']['name']:
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, IBS Laden, Schiffahrter Damm 24, 48145 Münster"
             correction['delivery_street'] = 'Schiffahrter Damm 24'
             correction['delivery_zip'] = '48145'
             correction['delivery_city'] = 'Münster'
         else:
-            correction['transport_location'] = f"{order['ship_address']['firstname']} {order['ship_address']['lastname']}, {order['ship_address']['address1']}, {order['ship_address']['zipcode']} {order['ship_address']['city']}"
-            correction['delivery_street'] = f"{order['ship_address']['address1']}"
-            correction['delivery_zip'] = f"{order['ship_address']['zipcode']}"
-            correction['delivery_city'] = f"{order['ship_address']['city']}"
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, {self.order_data['ship_address']['address1']}, {self.order_data['ship_address']['zipcode']} {self.order_data['ship_address']['city']}"
+            correction['delivery_street'] = f"{self.order_data['ship_address']['address1']}"
+            correction['delivery_zip'] = f"{self.order_data['ship_address']['zipcode']}"
+            correction['delivery_city'] = f"{self.order_data['ship_address']['city']}"
 
         # Order comment
-        if order['special_instructions']:
-            correction['remarks'] = order['special_instructions']
+        if self.order_data['special_instructions']:
+            correction['remarks'] = self.order_data['special_instructions']
         else:
             correction['remarks'] = ''
 
         return correction
 
-    def __get_product_data(self, item, headers, params):
+    def __get_product_data(self, item):
         '''Get product details.'''
         url = f"{self.server_name}/api/products/bulk_products?q[name_eq]={item['variant']['product_name']}"
-        response = requests.get(url, headers=headers, params=params)
-        return response
+        response = requests.get(url, headers=self.headers, params=self.params)
+        product_data = response.json()
+        return product_data
 
-    def __make_order_item_correction(self, item, eans, headers, params):
+    def __make_order_item_correction(self, item):
         '''Make order item correction.'''
         correction = {}
-
-        response = self.__get_product_data(item, headers, params)
+        product_data = self.__get_product_data(item)
 
         try:
-            product = response.json()['products'][0]
+            product = product_data['products'][0]
         except IndexError:
             product = None
 
@@ -252,7 +162,7 @@ class XMLOrder(XMLOrderTemplate):
             correction['tax_rate'] = '0.00'
 
         # Get EAN from google sheet
-        found_sku = eans.loc[eans['sku'] == item['variant']['sku']]
+        found_sku = self.eans.loc[self.eans['sku'] == item['variant']['sku']]
         if not found_sku.empty:
             found_ean = found_sku.iloc[0]['EAN']
             if found_ean == '':
@@ -270,18 +180,18 @@ class XMLOrder(XMLOrderTemplate):
 
         return correction
 
-    def __iterate_items(self, order, eans, headers, params):
+    def __iterate_items(self):
         '''Iterate through products.'''
         print('Products:')
         skus_wrong_format = []
-        for count, item in enumerate(order['line_items'], 1):
+        for count, item in enumerate(self.order_data['line_items'], 1):
             print(item['variant']['sku'])
-            order_item_correction = self.__make_order_item_correction(item, eans, headers, params)
+            correction = self.__make_order_item_correction(item)
             # Get all skus with wrong format
             if not re.match(r'\b\w{3}\-\w{3}\-\d{3,}\b', item['variant']['sku']):
                 skus_wrong_format.append({'sku': item['variant']['sku'],
-                    'producer': order_item_correction['manufacturer_pid']})
-            self.xml_str += self._get_order_item(item, count, order, order_item_correction)
+                    'producer': correction['manufacturer_pid']})
+            self.xml_str += get_xml_body(item, count, self.order_data, correction)
 
         return skus_wrong_format
 
@@ -333,7 +243,7 @@ class XMLOrder(XMLOrderTemplate):
         '''Send email if zipcode not in certain range.'''
         receiver = os.environ['EMAIL_OFN']
         subject = 'Falsche Postleitzahl in Münsterländer Bauernbox'
-        body = f"Bestellnummer {order['number']}, Postleitzahl {delivery_zip}<br>bitte prüfen."
+        body = f"Bestellnummer {self.order_data['number']}, Postleitzahl {delivery_zip}<br>bitte prüfen."
         self.__send_email(receiver, subject, body, None, None)
 
     def __send_by_email(self, filename, attchmnt):
@@ -353,22 +263,22 @@ class XMLOrder(XMLOrderTemplate):
         '''Save to local storage.'''
         tree.write(filename, encoding="utf-8", xml_declaration=True, short_empty_elements=False)
 
-    def generate(self, order_number, headers, params, eans, postal_codes):
+    def generate(self):
         '''General method.'''
-        order = self.__get_order_data(order_number, headers, params).json()
-        order_header_correction = self.__make_order_header_correction(order)
-        self.xml_str = self._get_order_header(order, order_header_correction)
-        skus_wrong_format = self.__iterate_items(order, eans, headers, params)
-        self.xml_str += self._get_order_summary(order)
+        self.__get_order_data()
+        correction = self.__make_order_header_correction()
+        self.xml_str = get_xml_header(self.order_data, correction)
+        skus_wrong_format = self.__iterate_items()
+        self.xml_str += get_xml_footer(self.order_data)
         self.__replace_special_chr('&', '&amp;')
 
         if skus_wrong_format:
             self.__send_email_wrong_sku_format(skus_wrong_format)
 
-        if order_header_correction['delivery_zip'] not in postal_codes:
-            self.__send_email_zip_not_in_range(order, order_header_correction['delivery_zip'])
+        if correction['delivery_zip'] not in self.postal_codes:
+            self.__send_email_zip_not_in_range(self.order_data, correction['delivery_zip'])
 
-        filename = f"opentransorder{order['number']}.xml"
+        filename = f"opentransorder{self.order_data['number']}.xml"
         tree = ET.ElementTree(ET.fromstring(self.xml_str, ET.XMLParser(encoding='utf-8')))
         root = tree.getroot()
         attchmnt = ET.tostring(root, encoding='utf-8', method='xml')

@@ -1,5 +1,3 @@
-from ofn_python.lib.xml_orders import XMLOrder
-
 import datetime as dt
 import os
 import gspread
@@ -8,6 +6,8 @@ import requests
 
 from oauth2client.service_account import ServiceAccountCredentials
 
+from ofn_python.lib.xml_orders import XMLOrder
+
 
 SCOPES = [
     'https://spreadsheets.google.com/feeds',
@@ -15,24 +15,6 @@ SCOPES = [
     'https://www.googleapis.com/auth/spreadsheets'
 ]
 CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
-
-
-def get_data_from_google_sheet(filename, columns):
-    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
-    client = gspread.authorize(creds)
-    sheet = client.open(filename)
-    worksheet_list = sheet.worksheets()
-
-    data = pd.DataFrame()
-    for worksheet in worksheet_list:
-        sheet_df = pd.DataFrame(worksheet.get_all_records())
-        try:
-            sheet_df = sheet_df[columns]
-        except KeyError:
-            sheet_df = pd.DataFrame(columns=columns)
-        data = data.append(sheet_df, ignore_index=True)
-
-    return data
 
 
 def run():
@@ -65,16 +47,12 @@ def run():
                 'order_cycle.id': 'order_cycle_id'}, inplace=True)
 
             ofn_server_name = 'https://openfoodnetwork.de'
-            eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten',
-                ['sku', 'EAN'])
-            postal_codes = ['48143', '48147', '48145', '48157', '48159', '48151', '48155', '48153',
-            '48161', '48167', '48165', '48163', '48149']
-
-            for i in orders.itertuples():
-                print(i.number, i.full_name, i.total, i.completed_at)
-                xml_order = XMLOrder(ofn_server_name)
-                xml_order.generate(i.number, headers, params, eans, postal_codes)
-                orders.at[i.Index, 'xml_generated_at'] = dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            for order in orders.itertuples():
+                print(order.number, order.full_name, order.total, order.completed_at)
+                xml_order = XMLOrder(order.number)
+                xml_order.generate()
+                orders.at[order.Index, 'xml_generated_at'] = dt.datetime.now().strftime(
+                    '%Y-%m-%dT%H:%M:%S')
                 print('---')
 
             orders['payments_path'] = orders['payments_path'].apply(lambda x: ofn_server_name + x)

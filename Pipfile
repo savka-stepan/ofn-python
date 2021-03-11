@@ -10,6 +10,7 @@ requests = "*"
 pandas = "*"
 gspread = "*"
 oauth2client = "*"
+reportlab = "*"
 
 [requires]
 python_version = "3.9"
