@@ -17,24 +17,6 @@ SCOPES = [
 CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
 
 
-def get_data_from_google_sheet(filename, columns):
-    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
-    client = gspread.authorize(creds)
-    sheet = client.open(filename)
-    worksheet_list = sheet.worksheets()
-
-    data = pd.DataFrame()
-    for worksheet in worksheet_list:
-        sheet_df = pd.DataFrame(worksheet.get_all_records())
-        try:
-            sheet_df = sheet_df[columns]
-        except KeyError:
-            sheet_df = pd.DataFrame(columns=columns)
-        data = data.append(sheet_df, ignore_index=True)
-
-    return data
-
-
 def run():
     today = dt.datetime.today().date()
     server_name = 'https://openfoodnetwork.de'
@@ -64,14 +46,10 @@ def run():
 
             orders.rename(columns={'distributor.id': 'distributor_id',
                 'order_cycle.id': 'order_cycle_id'}, inplace=True)
-            eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten',
-                ['sku', 'EAN'])
-            postal_codes = ['48143', '48147', '48145', '48157', '48159', '48151', '48155', '48153',
-            '48161', '48167', '48165', '48163', '48149']
 
             for order in orders.itertuples():
                 print(order.number, order.full_name, order.total, order.completed_at)
-                xml_order = XMLOrder(server_name, headers, params, order.number, eans, postal_codes)
+                xml_order = XMLOrder(order.number)
                 xml_order.generate()
                 orders.at[order.Index, 'xml_generated_at'] = dt.datetime.now().strftime(
                     '%Y-%m-%dT%H:%M:%S')
