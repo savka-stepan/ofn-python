@@ -17,9 +17,28 @@ SCOPES = [
 CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
 
 
+def get_data_from_google_sheet(filename, columns):
+    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
+    client = gspread.authorize(creds)
+    sheet = client.open(filename)
+    worksheet_list = sheet.worksheets()
+
+    data = pd.DataFrame()
+    for worksheet in worksheet_list:
+        sheet_df = pd.DataFrame(worksheet.get_all_records())
+        try:
+            sheet_df = sheet_df[columns]
+        except KeyError:
+            sheet_df = pd.DataFrame(columns=columns)
+        data = data.append(sheet_df, ignore_index=True)
+
+    return data
+
+
 def run():
     today = dt.datetime.today().date()
-    url = f'https://openfoodnetwork.de/api/orders?q[completed_at_gt]={today}&q[state_eq]=complete&q[distributor_name_eq]=Münsterländer Bauernbox eG (iG) '
+    server_name = 'https://openfoodnetwork.de'
+    url = f'{server_name}/api/orders?q[completed_at_gt]={today}&q[state_eq]=complete&q[distributor_name_eq]=Münsterländer Bauernbox eG (iG) '
     headers = {
         'Accept': 'application/json;charset=UTF-8',
         'Content-Type': 'application/json'
@@ -45,18 +64,21 @@ def run():
 
             orders.rename(columns={'distributor.id': 'distributor_id',
                 'order_cycle.id': 'order_cycle_id'}, inplace=True)
+            eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten',
+                ['sku', 'EAN'])
+            postal_codes = ['48143', '48147', '48145', '48157', '48159', '48151', '48155', '48153',
+            '48161', '48167', '48165', '48163', '48149']
 
-            ofn_server_name = 'https://openfoodnetwork.de'
             for order in orders.itertuples():
                 print(order.number, order.full_name, order.total, order.completed_at)
-                xml_order = XMLOrder(order.number)
+                xml_order = XMLOrder(server_name, headers, params, order.number, eans, postal_codes)
                 xml_order.generate()
                 orders.at[order.Index, 'xml_generated_at'] = dt.datetime.now().strftime(
                     '%Y-%m-%dT%H:%M:%S')
                 print('---')
 
-            orders['payments_path'] = orders['payments_path'].apply(lambda x: ofn_server_name + x)
-            orders['edit_path'] = orders['edit_path'].apply(lambda x: ofn_server_name + x)
+            orders['payments_path'] = orders['payments_path'].apply(lambda x: server_name + x)
+            orders['edit_path'] = orders['edit_path'].apply(lambda x: server_name + x)
             orders['created_at'] = orders['created_at'].apply(lambda x: dt.datetime.strptime(x,
                 '%B %d, %Y').strftime('%Y-%m-%d'))
             orders['completed_at'] = orders['completed_at'].apply(lambda x:
