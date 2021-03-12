@@ -16,23 +16,23 @@ from ofn_python.lib.pdf_invoices import InvoiceNo, PDFInvoice
 
 def run():
 
-    shop_url = 'https://openfoodnetwork.de/api/shops/36'
-    order_url = 'https://openfoodnetwork.de/api/orders/R676705088'
+    server_name = 'https://openfoodnetwork.de'
 
+    shop_url = f'{server_name}/api/shops/36'
     headers = {
         'Accept': 'application/json;charset=UTF-8',
         'Content-Type': 'application/json'
     }
-
     params = (('token', os.environ['OPENFOODNETWORK_API_KEY']),)
-
     response = requests.get(shop_url, headers=headers, params=params)
     shop_data = response.json()
-    response = requests.get(order_url, headers=headers, params=params)
-    order_data = response.json()
 
     init_invoice_no = InvoiceNo('RE-0000000')
     invoice_no = init_invoice_no.get_next_invoice_no()
+
+    order_url = f'{server_name}/api/orders/R861780311'
+    response = requests.get(order_url, headers=headers, params=params)
+    order_data = response.json()
     
     doc = SimpleDocTemplate(f'invoice{invoice_no}.pdf', pagesize=A4, rightMargin=18,
         leftMargin=18, topMargin=18, bottomMargin=18)
@@ -42,7 +42,7 @@ def run():
     pdf_invoice = PDFInvoice(invoice_no, shop_data, order_data)
     pdf_invoice.generate(styles)
 
-    # doc.build(pdf_invoice.body)
+    doc.build(pdf_invoice.body)
 
 
 if __name__ == '__main__':
