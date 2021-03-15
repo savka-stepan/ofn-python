@@ -24,7 +24,7 @@ class XMLOrder:
         'Content-Type': 'application/json'
     }
     params = (('token', os.environ['OPENFOODNETWORK_API_KEY']),)
-    eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten', ['sku', 'EAN'])
+    eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten', ['sku', 'EAN'])[0]
     postal_codes = ['48143', '48147', '48145', '48157', '48159', '48151', '48155', '48153',
     '48161', '48167', '48165', '48163', '48149']
     

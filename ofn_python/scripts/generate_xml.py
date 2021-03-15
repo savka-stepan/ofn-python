@@ -21,7 +21,7 @@ def run():
 
     if data['orders']:
         orders = pd.json_normalize(data['orders']).sort_values('id').reset_index(drop=True)
-        order_nos = get_data_from_google_sheet('Bauernbox Übersicht', ['number'])
+        order_nos, sheet = get_data_from_google_sheet('Bauernbox Übersicht', ['number'])
         orders = orders[~orders['number'].isin(order_nos['number'].tolist())].reset_index(drop=True)
 
         if not orders.empty:
@@ -57,6 +57,7 @@ def run():
             'total', 'distributor_id', 'order_cycle_id', 'xml_generated_at']]
 
             # Save new orders to Bauernbox Übersicht google table
+            worksheet = sheet.sheet1
             orders.fillna('', inplace=True)
             worksheet.append_rows(orders.values.tolist())
 

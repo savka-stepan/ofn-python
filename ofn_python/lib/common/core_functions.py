@@ -28,4 +28,4 @@ def get_data_from_google_sheet(filename, columns):
             sheet_df = pd.DataFrame(columns=columns)
         data = data.append(sheet_df, ignore_index=True)
 
-    return data
+    return data, sheet
