@@ -1,9 +1,7 @@
 import datetime as dt
 import ftplib
-import gspread
 import io
 import os
-import pandas as pd
 import re
 import requests
 import smtplib
@@ -13,35 +11,9 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from oauth2client.service_account import ServiceAccountCredentials
 
+from ofn_python.lib.common.core_functions import get_data_from_google_sheet
 from ofn_python.xml_templates.xml_template import get_xml_header, get_xml_body, get_xml_footer
-
-
-SCOPES = [
-    'https://spreadsheets.google.com/feeds',
-    'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/spreadsheets'
-]
-CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
-
-
-def get_data_from_google_sheet(filename, columns):
-    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
-    client = gspread.authorize(creds)
-    sheet = client.open(filename)
-    worksheet_list = sheet.worksheets()
-
-    data = pd.DataFrame()
-    for worksheet in worksheet_list:
-        sheet_df = pd.DataFrame(worksheet.get_all_records())
-        try:
-            sheet_df = sheet_df[columns]
-        except KeyError:
-            sheet_df = pd.DataFrame(columns=columns)
-        data = data.append(sheet_df, ignore_index=True)
-
-    return data
 
 
 class XMLOrder:
@@ -52,8 +24,7 @@ class XMLOrder:
         'Content-Type': 'application/json'
     }
     params = (('token', os.environ['OPENFOODNETWORK_API_KEY']),)
-    eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten',
-        ['sku', 'EAN'])
+    eans = get_data_from_google_sheet('Produktliste_MSB_XXX_Artikelstammdaten', ['sku', 'EAN'])
     postal_codes = ['48143', '48147', '48145', '48157', '48159', '48151', '48155', '48153',
     '48161', '48167', '48165', '48163', '48149']
     

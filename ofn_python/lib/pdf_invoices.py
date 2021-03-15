@@ -4,7 +4,6 @@ import os
 import requests
 
 from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch, mm
 
 
@@ -39,6 +38,7 @@ class PDFInvoice:
         self.payment_state = ''
 
     def __add_header(self, styles):
+        '''Add header section.'''
         logo_response = requests.get(f'{self.server_name}{self.shop_data["logo"]}').content
         logo = Image(io.BytesIO(logo_response), inch, inch)
         p1 = Paragraph(f'<font size="10">{self.order_data["ship_address"]["firstname"]} {self.order_data["ship_address"]["lastname"]}</font><br/>\
@@ -57,6 +57,7 @@ class PDFInvoice:
         self.body.append(t)
 
     def __add_dates_and_no(self, styles):
+        '''Add invoice dates and invoice no. section'''
         order_date = dt.datetime.strptime(self.order_data["completed_at"],
             '%B %d, %Y').strftime('%d.%m.%Y')
         transaction_date = dt.datetime.strptime(self.order_data["payments"][-1]["updated_at"],
@@ -88,6 +89,7 @@ class PDFInvoice:
         return product_data
 
     def __add_table(self, styles):
+        '''Add table with items section.'''
         p1 = Paragraph(f'<font size="8"><b>Artikel</b></font>', styles["Normal"])
         p2 = Paragraph(f'<font size="8"><b>Menge</b></font>', styles["align_right"])
         p3 = Paragraph(f'<font size="8"><b>Stückpreis (inkl. Steuern)</b></font>', styles["align_right"])
@@ -143,7 +145,7 @@ class PDFInvoice:
                 total_price = int(i["quantity"]) * float(i["price"])
 
                 if tax_rate != '0.00':
-                    amounts = {'tax_amount': total_price * float(tax_rate) / 100.0,
+                    amounts = {'tax_amount': total_price * (1 - 1 / (1 + float(tax_rate) / 100.0)),
                         'total_price': total_price}
 
                     if tax_rate in self.tax_rates.keys():
@@ -162,8 +164,10 @@ class PDFInvoice:
         shipping_tax_rate = tax_rate_1
         shipping1 = float(self.order_data["adjustments"][0]["amount"])
         shipping2 = float(self.order_data["adjustments"][1]["amount"])
-        amounts1 = {'tax_amount': shipping1 * float(shipping_tax_rate) / 100.0, 'total_price': shipping1}
-        amounts2 = {'tax_amount': shipping2 * float(shipping_tax_rate) / 100.0, 'total_price': shipping2}
+        amounts1 = {'tax_amount': shipping1 * (1 - 1 / (1 + float(shipping_tax_rate) / 100.0)),
+            'total_price': shipping1}
+        amounts2 = {'tax_amount': shipping2 * (1 - 1 / (1 + float(shipping_tax_rate) / 100.0)),
+            'total_price': shipping2}
 
         if shipping_tax_rate in self.tax_rates.keys():
             self.tax_rates[shipping_tax_rate].append(amounts1)
@@ -194,6 +198,7 @@ class PDFInvoice:
         self.body.append(t)
 
     def __add_total_amounts(self, styles):
+        '''Add total amounts section.'''
         p1 = Paragraph(f'', styles["Normal"])
         p2 = Paragraph(f'<font size="10"><b>Gesamt (inkl. Steuern)</b></font>', styles["align_right"])
         p3 = Paragraph(f'<font size="10"><b>{round(float(self.order_data["total"]), 2):.2f} €</b></font>', styles["align_right"])
@@ -219,6 +224,7 @@ class PDFInvoice:
         self.body.append(Spacer(1, 24))
 
     def __add_footer(self, styles):
+        '''Add footer section.'''
         p1 = Paragraph(f'<font size="8"><b>Zahlungsübersicht</b></font><br/>', styles["Normal"])
         p2 = Paragraph(f'<font size="8">{self.payment_state}</font><br/>', styles["align_right"])
         t = Table([[p1, p2]])
@@ -246,6 +252,7 @@ class PDFInvoice:
         self.body.append(t)
 
     def generate(self, styles):
+        '''General method.'''
         self.__add_header(styles)
         self.__add_dates_and_no(styles)
         self.__add_table(styles)

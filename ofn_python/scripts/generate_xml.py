@@ -1,20 +1,10 @@
 import datetime as dt
 import os
-import gspread
 import pandas as pd
 import requests
 
-from oauth2client.service_account import ServiceAccountCredentials
-
+from ofn_python.lib.common.core_functions import get_data_from_google_sheet
 from ofn_python.lib.xml_orders import XMLOrder
-
-
-SCOPES = [
-    'https://spreadsheets.google.com/feeds',
-    'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/spreadsheets'
-]
-CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
 
 
 def run():
@@ -31,11 +21,8 @@ def run():
 
     if data['orders']:
         orders = pd.json_normalize(data['orders']).sort_values('id').reset_index(drop=True)
-        creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
-        client = gspread.authorize(creds)
-        worksheet = client.open('Bauernbox Übersicht').sheet1
-        sheet_df = pd.DataFrame(worksheet.get_all_records())
-        orders = orders[~orders['number'].isin(sheet_df['number'].tolist())].reset_index(drop=True)
+        order_nos = get_data_from_google_sheet('Bauernbox Übersicht', ['number'])
+        orders = orders[~orders['number'].isin(order_nos['number'].tolist())].reset_index(drop=True)
 
         if not orders.empty:
             orders = orders[['id', 'number', 'user_id', 'full_name', 'email', 'phone',
