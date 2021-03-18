@@ -57,7 +57,7 @@ def run():
             'total', 'distributor_id', 'order_cycle_id', 'xml_generated_at']]
 
             # Save new orders to Bauernbox Übersicht google table
-            worksheet = sheet.sheet1
+            worksheet = sheet.worksheet('münster')
             orders.fillna('', inplace=True)
             worksheet.append_rows(orders.values.tolist())
 

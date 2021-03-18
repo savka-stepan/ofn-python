@@ -39,7 +39,7 @@ class XMLOrder:
         response = requests.get(url, headers=self.headers, params=self.params)
         self.order_data = response.json()
 
-    def __make_order_header_correction(self):
+    def __get_order_header_correction(self):
         '''Make order header correction.'''
         correction = {}
         correction['completed_at'] = dt.datetime.strptime(self.order_data['completed_at'],
@@ -238,7 +238,7 @@ class XMLOrder:
     def generate(self):
         '''General method.'''
         self.__get_order_data()
-        correction = self.__make_order_header_correction()
+        correction = self.__get_order_header_correction()
         self.xml_str = get_xml_header(self.order_data, correction)
         skus_wrong_format = self.__iterate_items()
         self.xml_str += get_xml_footer(self.order_data)

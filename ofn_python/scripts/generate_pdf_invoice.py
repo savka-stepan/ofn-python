@@ -27,7 +27,7 @@ def run():
     shop_data = response.json()
 
     sheet_df, sheet = get_data_from_google_sheet('Bauernbox Übersicht', ['number', 'invoice_no'])
-    worksheet = sheet.sheet1
+    worksheet = sheet.worksheet('münster')
 
     last_invoice = list(filter(None, sheet_df['invoice_no'].tolist()))
     if last_invoice:
@@ -72,7 +72,7 @@ def run():
 
     # Update sheet with new data
     sheet.values_update(
-        f'Sheet1!AA{cell_rows[0]}:AB{cell_rows[-1]}', 
+        f'münster!AA{cell_rows[0]}:AB{cell_rows[-1]}', 
         params={'valueInputOption': 'RAW'}, 
         body={'values': new_data}
     )
