@@ -10,8 +10,7 @@ from ofn_python.lib.xml_orders import XMLOrder
 def run():
     today = dt.datetime.today().date()
     server_name = 'https://openfoodnetwork.de'
-    distributor_name = 'Bauernbox - Münster  (Münsterländer Bauernbox eG (iG) )'
-    url = f'{server_name}/api/orders?q[completed_at_gt]={today}&q[state_eq]=complete&q[distributor_name_eq]={distributor_name}'
+    url = f'{server_name}/api/orders?q[completed_at_gt]={today}&q[state_eq]=complete&q[distributor_id_eq]=36'
     headers = {
         'Accept': 'application/json;charset=UTF-8',
         'Content-Type': 'application/json'
