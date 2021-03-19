@@ -26,10 +26,10 @@ def get_xml_header(order, correction):
         </ADDRESS>
     </PARTY>
     <PARTY>
-        <bmecat:PARTY_ID type="supplier_specific">{order['user_id']}</bmecat:PARTY_ID>
+        <bmecat:PARTY_ID type="supplier_specific">{order['distributor']['id']}</bmecat:PARTY_ID>
         <PARTY_ROLE>supplier</PARTY_ROLE>
         <ADDRESS>
-            <bmecat:STREET></bmecat:STREET>
+            <bmecat:NAME>{order['distributor_name']}</bmecat:NAME>
             <bmecat:STREET></bmecat:STREET>
             <bmecat:ZIP></bmecat:ZIP>
             <bmecat:CITY></bmecat:CITY>
