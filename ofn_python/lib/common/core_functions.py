@@ -13,19 +13,28 @@ SCOPES = [
 CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
 
 
-def get_data_from_google_sheet(filename, columns):
+def get_data_from_google_sheet(filename, columns, worksheet_name=None):
     creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
     client = gspread.authorize(creds)
     sheet = client.open(filename)
-    worksheet_list = sheet.worksheets()
 
-    data = pd.DataFrame()
-    for worksheet in worksheet_list:
-        sheet_df = pd.DataFrame(worksheet.get_all_records())
+    if not worksheet_name:
+        worksheet_list = sheet.worksheets()
+        data = pd.DataFrame()
+        for worksheet in worksheet_list:
+            sheet_df = pd.DataFrame(worksheet.get_all_records())
+            try:
+                sheet_df = sheet_df[columns]
+            except KeyError:
+                sheet_df = pd.DataFrame(columns=columns)
+            data = data.append(sheet_df, ignore_index=True)
+            
+    else:
+        worksheet = sheet.worksheet(worksheet_name)
+        data = pd.DataFrame(worksheet.get_all_records())
         try:
-            sheet_df = sheet_df[columns]
+            data = data[columns]
         except KeyError:
-            sheet_df = pd.DataFrame(columns=columns)
-        data = data.append(sheet_df, ignore_index=True)
+            data = pd.DataFrame(columns=columns)
 
     return data, sheet

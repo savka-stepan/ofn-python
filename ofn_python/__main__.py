@@ -2,7 +2,7 @@ from ofn_python.scripts import generate_xml, get_products, generate_pdf_invoice
 
 
 def main():
-    # generate_xml.run()
+    # generate_xml.run([132, 133])
     # get_products.run()
     generate_pdf_invoice.run()
 

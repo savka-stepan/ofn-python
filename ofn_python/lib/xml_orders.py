@@ -70,6 +70,16 @@ class XMLOrder:
             correction['delivery_street'] = 'Schiffahrter Damm 24'
             correction['delivery_zip'] = '48145'
             correction['delivery_city'] = 'Münster'
+        elif 'Abholung in der Bäckerei Schmitz' in self.order_data['shipping_method']['name']:
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Magnusplatz 23, 48351 Everswinkel"
+            correction['delivery_street'] = 'Magnusplatz 23'
+            correction['delivery_zip'] = '48351'
+            correction['delivery_city'] = 'Everswinkel'
+        elif 'Abholung in der Fleischerei Lechtermann' in self.order_data['shipping_method']['name']:
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Albersloher Str. 4, 48317 Drensteinfurt"
+            correction['delivery_street'] = 'Albersloher Str. 4'
+            correction['delivery_zip'] = '48317'
+            correction['delivery_city'] = 'Drensteinfurt'
         else:
             correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, {self.order_data['ship_address']['address1']}, {self.order_data['ship_address']['zipcode']} {self.order_data['ship_address']['city']}"
             correction['delivery_street'] = f"{self.order_data['ship_address']['address1']}"
@@ -204,7 +214,7 @@ class XMLOrder:
     def __send_email_wrong_sku_format(self, skus_wrong_format):
         '''Send email with wrong sku format.'''
         receiver = os.environ['EMAIL_OFN']
-        subject = 'SKU Fehler in Münsterländer Bauernbox'
+        subject = 'SKU Fehler in Bauernbox'
         body = 'Es gab ein paar Fehler mit:'
         for sku_wrong_format in skus_wrong_format:
             body += f"<br>SKU {sku_wrong_format['sku']}, von Produzent {sku_wrong_format['producer']}"
@@ -214,7 +224,7 @@ class XMLOrder:
     def __send_email_zip_not_in_range(self, order, delivery_zip):
         '''Send email if zipcode not in certain range.'''
         receiver = os.environ['EMAIL_OFN']
-        subject = 'Falsche Postleitzahl in Münsterländer Bauernbox'
+        subject = 'Falsche Postleitzahl in Bauernbox'
         body = f"Bestellnummer {self.order_data['number']}, Postleitzahl {delivery_zip}<br>bitte prüfen."
         self.__send_email(receiver, subject, body, None, None)
 
