@@ -49,7 +49,7 @@ class XMLOrder:
             correction['delivery_street'] = 'Sendener Stiege 32'
             correction['delivery_zip'] = '48163'
             correction['delivery_city'] = 'Münster'
-        elif 'Boxenstopp Harkortstr.4 / Markant Tankstelle' in self.order_data['shipping_method']['name']:
+        elif 'Boxenstopp Markant Tankstelle Schmidt' in self.order_data['shipping_method']['name']:
             correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Markant Tankstelle Schmidt, Harkortstr.4, 48163 Münster"
             correction['delivery_street'] = 'Harkortstr.4'
             correction['delivery_zip'] = '48163'
@@ -68,6 +68,11 @@ class XMLOrder:
             correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, IBS Laden, Schiffahrter Damm 24, 48145 Münster"
             correction['delivery_street'] = 'Schiffahrter Damm 24'
             correction['delivery_zip'] = '48145'
+            correction['delivery_city'] = 'Münster'
+        elif 'Boxenstopp Wolbecker Str./ Fleischerei Hidding' in self.order_data['shipping_method']['name']:
+            correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Fleischerei Hidding, Wolbecker Str. 222, 48155 Münster"
+            correction['delivery_street'] = 'Wolbecker Str. 222'
+            correction['delivery_zip'] = '48155'
             correction['delivery_city'] = 'Münster'
         elif 'Abholung in der Bäckerei Schmitz' in self.order_data['shipping_method']['name']:
             correction['transport_location'] = f"{self.order_data['ship_address']['firstname']} {self.order_data['ship_address']['lastname']}, Magnusplatz 23, 48351 Everswinkel"
