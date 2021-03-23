@@ -2,6 +2,7 @@ import datetime as dt
 import os
 import pandas as pd
 import requests
+import xml.etree.ElementTree as ET
 
 from ofn_python.lib.common.core_functions import get_data_from_google_sheet
 from ofn_python.lib.xml_orders import XMLOrder
@@ -9,6 +10,7 @@ from ofn_python.lib.xml_orders import XMLOrder
 
 def run(distributors):
     today = dt.datetime.today().date()
+    yesterday = (dt.datetime.today() - dt.timedelta(days=1)).date()
     server_name = 'https://openfoodnetwork.de'
     headers = {
         'Accept': 'application/json;charset=UTF-8',
@@ -25,7 +27,7 @@ def run(distributors):
             selected_date = today - dt.timedelta(days=7)
         else:
             worksheet_name = 'münster'
-            selected_date = today
+            selected_date = yesterday
 
         url = f'{server_name}/api/orders?q[completed_at_gt]={selected_date}&q[state_eq]=complete&q[distributor_id_eq]={distributor_id}'
         response = requests.get(url, headers=headers, params=params)
@@ -51,10 +53,19 @@ def run(distributors):
 
                 for order in orders.itertuples():
                     print(order.number, order.full_name, order.total, order.completed_at)
+
                     xml_order = XMLOrder(order.number)
                     xml_order.generate()
+                    filename = f"opentransorder{order.number}.xml"
+                    tree = ET.ElementTree(ET.fromstring(xml_order.xml_str, ET.XMLParser(encoding='utf-8')))
+                    root = tree.getroot()
+                    attchmnt = ET.tostring(root, encoding='utf-8', method='xml')
+                    xml_order.send_by_email(filename, attchmnt)
+                    xml_order.send_to_ftp_server(filename, attchmnt)
+
                     orders.at[order.Index, 'xml_generated_at'] = dt.datetime.now().strftime(
                         '%Y-%m-%dT%H:%M:%S')
+                    
                     print('---')
 
                 orders['payments_path'] = orders['payments_path'].apply(lambda x: server_name + x)

@@ -5,7 +5,6 @@ import os
 import re
 import requests
 import smtplib
-import xml.etree.ElementTree as ET
 
 from email import encoders
 from email.mime.base import MIMEBase
@@ -228,20 +227,20 @@ class XMLOrder:
         body = f"Bestellnummer {self.order_data['number']}, Postleitzahl {delivery_zip}<br>bitte prüfen."
         self.__send_email(receiver, subject, body, None, None)
 
-    def __send_by_email(self, filename, attchmnt):
+    def send_by_email(self, filename, attchmnt):
         '''Send xml file by email.'''
         receiver = os.environ['EMAIL_OPENTRANSORDERS']
         subject = 'Opentransorders'
         body = 'Opentransorders xml files:'
         self.__send_email(receiver, subject, body, filename, attchmnt)
 
-    def __send_to_ftp_server(self, filename, attchmnt):
+    def send_to_ftp_server(self, filename, attchmnt):
         '''Send xml file to ftp server.'''
         with ftplib.FTP(os.environ['FTP_SERVER'], os.environ['FTP_USERNAME'],
                 os.environ['FTP_PASSWORD']) as ftp:
             ftp.storbinary(f'STOR orders/{filename}', io.BytesIO(attchmnt))
 
-    def __save_to_local_storage(self, tree, filename):
+    def save_to_local_storage(self, tree, filename):
         '''Save to local storage.'''
         tree.write(filename, encoding="utf-8", xml_declaration=True, short_empty_elements=False)
 
@@ -259,11 +258,3 @@ class XMLOrder:
 
         if correction['delivery_zip'] not in self.postal_codes:
             self.__send_email_zip_not_in_range(self.order_data, correction['delivery_zip'])
-
-        filename = f"opentransorder{self.order_data['number']}.xml"
-        tree = ET.ElementTree(ET.fromstring(self.xml_str, ET.XMLParser(encoding='utf-8')))
-        root = tree.getroot()
-        attchmnt = ET.tostring(root, encoding='utf-8', method='xml')
-        self.__send_by_email(filename, attchmnt)
-        self.__send_to_ftp_server(filename, attchmnt)
-
