@@ -25,6 +25,9 @@ def run(distributors):
         elif distributor_id == 133:
             worksheet_name = 'rinkerode'
             selected_date = today - dt.timedelta(days=7)
+        elif distributor_id == 139:
+            worksheet_name = 'lieferbox'
+            selected_date = yesterday
         else:
             worksheet_name = 'münster'
             selected_date = yesterday
