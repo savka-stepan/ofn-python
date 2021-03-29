@@ -36,6 +36,58 @@ def run(distributors):
         response = requests.get(url, headers=headers, params=params)
         data = response.json()
 
+        if (dt.datetime.now() >= dt.datetime.strptime('2021-03-31 19:55', '%Y-%m-%d %H:%M') and
+            dt.datetime.now() <= dt.datetime.strptime('2021-03-31 20:05', '%Y-%m-%d %H:%M')):
+
+            sheet_df, sheet = get_data_from_google_sheet('Bauernbox Übersicht', ['number',
+                'order_cycle_id', 'xml_generated_at'], worksheet_name)
+            worksheet = sheet.worksheet(worksheet_name)
+            prev_orders = sheet_df.loc[(sheet_df['order_cycle_id'] == 323) & (sheet_df['xml_generated_at'] == '')]
+
+            if not prev_orders.empty:
+                for order in prev_orders.itertuples():
+                    print(order.number)
+
+                    xml_order = XMLOrder(order.number)
+                    xml_order.generate()
+                    filename = f"opentransorder{order.number}.xml"
+                    tree = ET.ElementTree(ET.fromstring(xml_order.xml_str, ET.XMLParser(encoding='utf-8')))
+                    root = tree.getroot()
+                    attchmnt = ET.tostring(root, encoding='utf-8', method='xml')
+                    xml_order.send_by_email(filename, attchmnt)
+                    xml_order.send_to_ftp_server(filename, attchmnt)
+
+                    cell = worksheet.find(order.number)
+                    worksheet.update_cell(cell.row, 26, dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+
+                    print('---')
+
+        if (dt.datetime.now() >= dt.datetime.strptime('2021-04-01 13:55', '%Y-%m-%d %H:%M') and
+            dt.datetime.now() <= dt.datetime.strptime('2021-04-01 14:05', '%Y-%m-%d %H:%M')):
+
+            sheet_df, sheet = get_data_from_google_sheet('Bauernbox Übersicht', ['number',
+                'order_cycle_id', 'xml_generated_at'], worksheet_name)
+            worksheet = sheet.worksheet(worksheet_name)
+            prev_orders = sheet_df.loc[(sheet_df['order_cycle_id'] == 326) & (sheet_df['xml_generated_at'] == '')]
+
+            if not prev_orders.empty:
+                for order in prev_orders.itertuples():
+                    print(order.number)
+
+                    xml_order = XMLOrder(order.number)
+                    xml_order.generate()
+                    filename = f"opentransorder{order.number}.xml"
+                    tree = ET.ElementTree(ET.fromstring(xml_order.xml_str, ET.XMLParser(encoding='utf-8')))
+                    root = tree.getroot()
+                    attchmnt = ET.tostring(root, encoding='utf-8', method='xml')
+                    xml_order.send_by_email(filename, attchmnt)
+                    xml_order.send_to_ftp_server(filename, attchmnt)
+
+                    cell = worksheet.find(order.number)
+                    worksheet.update_cell(cell.row, 26, dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S'))
+
+                    print('---')
+
         if data['orders']:
             orders = pd.json_normalize(data['orders']).sort_values('id').reset_index(drop=True)
             order_nos, sheet = get_data_from_google_sheet('Bauernbox Übersicht', ['number'],
