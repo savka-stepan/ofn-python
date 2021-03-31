@@ -63,7 +63,7 @@ def run(distributors):
                     print('---')
 
         if (dt.datetime.now() >= dt.datetime.strptime('2021-04-01 13:55', '%Y-%m-%d %H:%M') and
-            dt.datetime.now() <= dt.datetime.strptime('2021-04-01 14:05', '%Y-%m-%d %H:%M')):
+            dt.datetime.now() <= dt.datetime.strptime('2021-04-01 14:25', '%Y-%m-%d %H:%M')):
 
             sheet_df, sheet = get_data_from_google_sheet('Bauernbox Übersicht', ['number',
                 'order_cycle_id', 'xml_generated_at'], worksheet_name)
