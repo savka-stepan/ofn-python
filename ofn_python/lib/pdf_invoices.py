@@ -228,9 +228,7 @@ class PDFInvoice:
         p1 = Paragraph(f'<font size="8"><b>Zahlungsübersicht</b></font><br/>', styles["Normal"])
         p2 = Paragraph(f'<font size="8">{self.payment_state}</font><br/>', styles["align_right"])
         t = Table([[p1, p2]])
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, -1), '#b7ddf7')
-        ]))
+        t.setStyle(TableStyle([('BACKGROUND', (0, 0), (-1, -1), '#b7ddf7')]))
         self.body.append(t)
         self.body.append(Spacer(1, 6))
 
@@ -251,6 +249,14 @@ class PDFInvoice:
         ]))
         self.body.append(t)
 
+    def __add_bank_info(self, styles):
+        '''Add bank informayion section.'''
+        p1 = Paragraph(f'<font size="6"><b>Sparkasse Münsterland Ost</b></font><br/>\
+            <font size="6"><b>IBAN DE30 4005 0150 0034 4700 21</b></font><br/>\
+            <font size="6"><b>BIC WELADED1MST</b></font><br/>', styles["Normal"])
+        self.body.append(Spacer(1, 120))
+        self.body.append(p1)
+
     def generate(self, styles):
         '''General method.'''
         self.__add_header(styles)
@@ -258,3 +264,4 @@ class PDFInvoice:
         self.__add_table(styles)
         self.__add_total_amounts(styles)
         self.__add_footer(styles)
+        self.__add_bank_info(styles)

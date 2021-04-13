@@ -37,7 +37,7 @@ def run():
 
     cell_rows = []
     new_data = []
-    for i in sheet_df['number'].tolist()[:26]:
+    for i in sheet_df['number'].tolist()[:1]:
         last_invoice_no = InvoiceNo(last_invoice)
         invoice_no = last_invoice_no.get_next_invoice_no()
         last_invoice = invoice_no
