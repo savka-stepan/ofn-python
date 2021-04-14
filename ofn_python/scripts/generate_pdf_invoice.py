@@ -7,11 +7,21 @@ import requests
 from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate
+from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, SimpleDocTemplate
 
 from ofn_python.lib.common.core_functions import get_data_from_google_sheet
 from ofn_python.lib.pdf_invoices import InvoiceNo, PDFInvoice
 
+
+def add_bank_info(canvas, doc):
+    p1 = 'Sparkasse Münsterland Ost'
+    p2 = 'IBAN DE30 4005 0150 0034 4700 21'
+    p3 = 'BIC WELADED1MST'
+    canvas.setFont("Helvetica-Bold", 6)
+    canvas.drawString(11*mm, 11*mm, p1)
+    canvas.drawString(11*mm, 8*mm, p2)
+    canvas.drawString(11*mm, 5*mm, p3)
 
 def run():
 
@@ -37,7 +47,8 @@ def run():
 
     cell_rows = []
     new_data = []
-    for i in sheet_df['number'].tolist()[:1]:
+    sheet_df = sheet_df.loc[sheet_df['invoice_no'] == '']
+    for i in sheet_df['number'].tolist():
         last_invoice_no = InvoiceNo(last_invoice)
         invoice_no = last_invoice_no.get_next_invoice_no()
         last_invoice = invoice_no
@@ -57,7 +68,7 @@ def run():
         pdf_invoice = PDFInvoice(invoice_no, shop_data, order_data)
         pdf_invoice.generate(styles)
 
-        doc.build(pdf_invoice.body)
+        doc.build(pdf_invoice.body, onFirstPage=add_bank_info, onLaterPages=add_bank_info)
         result = stream.getvalue()
         stream.close()
 

@@ -3,7 +3,7 @@ import io
 import os
 import requests
 
-from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
+from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle, PageBreak
 from reportlab.lib.units import inch, mm
 
 
@@ -109,7 +109,7 @@ class PDFInvoice:
         for count, i in enumerate(self.order_data['line_items']):
             print(i["variant"]["product_name"])
 
-            if count == 17:
+            if count % 17 == 0 and count > 0:
                 t = Table(data, colWidths=(89*mm, 25*mm, 25*mm, 25*mm, 25*mm))
                 t.setStyle(TableStyle([
                     ('BACKGROUND', (0, 0), (-1, 0), '#e8e8e8'),
@@ -197,6 +197,8 @@ class PDFInvoice:
         ]))
         self.body.append(t)
 
+        return count
+
     def __add_total_amounts(self, styles):
         '''Add total amounts section.'''
         p1 = Paragraph(f'', styles["Normal"])
@@ -249,19 +251,14 @@ class PDFInvoice:
         ]))
         self.body.append(t)
 
-    def __add_bank_info(self, styles):
-        '''Add bank informayion section.'''
-        p1 = Paragraph(f'<font size="6"><b>Sparkasse Münsterland Ost</b></font><br/>\
-            <font size="6"><b>IBAN DE30 4005 0150 0034 4700 21</b></font><br/>\
-            <font size="6"><b>BIC WELADED1MST</b></font><br/>', styles["Normal"])
-        self.body.append(Spacer(1, 120))
-        self.body.append(p1)
-
     def generate(self, styles):
         '''General method.'''
         self.__add_header(styles)
         self.__add_dates_and_no(styles)
-        self.__add_table(styles)
+        items_count = self.__add_table(styles)
+        if (items_count >= 11 and items_count < 17) or (items_count >= 28 and items_count < 34):
+            self.body.append(PageBreak())
+            self.__add_header(styles)
+            self.__add_dates_and_no(styles)
         self.__add_total_amounts(styles)
         self.__add_footer(styles)
-        self.__add_bank_info(styles)
