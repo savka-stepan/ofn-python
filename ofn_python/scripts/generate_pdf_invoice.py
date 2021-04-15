@@ -36,7 +36,9 @@ def run():
     response = requests.get(shop_url, headers=headers, params=params)
     shop_data = response.json()
 
-    sheet_df, sheet = get_data_from_google_sheet('Bauernbox Übersicht', ['number', 'invoice_no'])
+    credentials_file = 'openfoodnetwork-9e79b28ba490.json'
+    sheet_df, sheet = get_data_from_google_sheet(credentials_file, 'Bauernbox Übersicht',
+        ['number', 'invoice_no'])
     worksheet = sheet.worksheet('münster')
 
     last_invoice = list(filter(None, sheet_df['invoice_no'].tolist()))

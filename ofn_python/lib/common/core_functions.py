@@ -10,10 +10,10 @@ SCOPES = [
     'https://www.googleapis.com/auth/drive',
     'https://www.googleapis.com/auth/spreadsheets'
 ]
-CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/openfoodnetwork-9e79b28ba490.json'
 
 
-def get_data_from_google_sheet(filename, columns, worksheet_name=None):
+def get_data_from_google_sheet(credentials_file, filename, columns, worksheet_name=None):
+    CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/{credentials_file}'
     creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
     client = gspread.authorize(creds)
     sheet = client.open(filename)
