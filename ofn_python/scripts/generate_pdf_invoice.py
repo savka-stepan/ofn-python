@@ -50,45 +50,46 @@ def run():
     cell_rows = []
     new_data = []
     sheet_df = sheet_df.loc[sheet_df['invoice_no'] == '']
-    for i in sheet_df['number'].tolist():
-        last_invoice_no = InvoiceNo(last_invoice)
-        invoice_no = last_invoice_no.get_next_invoice_no()
-        last_invoice = invoice_no
+    if not sheet_df.empty:
+        for i in sheet_df['number'].tolist():
+            last_invoice_no = InvoiceNo(last_invoice)
+            invoice_no = last_invoice_no.get_next_invoice_no()
+            last_invoice = invoice_no
 
-        order_url = f'{server_name}/api/orders/{i}'
-        response = requests.get(order_url, headers=headers, params=params)
-        order_data = response.json()
+            order_url = f'{server_name}/api/orders/{i}'
+            response = requests.get(order_url, headers=headers, params=params)
+            order_data = response.json()
 
-        stream = io.BytesIO()
-        doc = SimpleDocTemplate(stream, pagesize=A4, rightMargin=18, leftMargin=18, topMargin=18,
-            bottomMargin=18)
-        styles = getSampleStyleSheet()
-        styles.add(ParagraphStyle(name='align_right', alignment=TA_RIGHT))
+            stream = io.BytesIO()
+            doc = SimpleDocTemplate(stream, pagesize=A4, rightMargin=18, leftMargin=18, topMargin=18,
+                bottomMargin=18)
+            styles = getSampleStyleSheet()
+            styles.add(ParagraphStyle(name='align_right', alignment=TA_RIGHT))
 
-        print(i, invoice_no)
-        
-        pdf_invoice = PDFInvoice(invoice_no, shop_data, order_data)
-        pdf_invoice.generate(styles)
+            print(i, invoice_no)
+            
+            pdf_invoice = PDFInvoice(invoice_no, shop_data, order_data)
+            pdf_invoice.generate(styles)
 
-        doc.build(pdf_invoice.body, onFirstPage=add_bank_info, onLaterPages=add_bank_info)
-        result = stream.getvalue()
-        stream.close()
+            doc.build(pdf_invoice.body, onFirstPage=add_bank_info, onLaterPages=add_bank_info)
+            result = stream.getvalue()
+            stream.close()
 
-        with ftplib.FTP(os.environ['FTP_SERVER'], os.environ['FTP_USERNAME'],
-                os.environ['FTP_PASSWORD']) as ftp:
-            ftp.storbinary(f'STOR invoices/invoice{invoice_no}.pdf', io.BytesIO(result))
+            with ftplib.FTP(os.environ['FTP_SERVER'], os.environ['FTP_USERNAME'],
+                    os.environ['FTP_PASSWORD']) as ftp:
+                ftp.storbinary(f'STOR invoices/invoice{invoice_no}.pdf', io.BytesIO(result))
 
-        cell_rows.append(worksheet.find(i).row)
-        new_data.append([invoice_no, dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')])
+            cell_rows.append(worksheet.find(i).row)
+            new_data.append([invoice_no, dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')])
 
-        print('---')
+            print('---')
 
-    # Update sheet with new data
-    sheet.values_update(
-        f'münster!AA{cell_rows[0]}:AB{cell_rows[-1]}', 
-        params={'valueInputOption': 'RAW'}, 
-        body={'values': new_data}
-    )
+        # Update sheet with new data
+        sheet.values_update(
+            f'münster!AA{cell_rows[0]}:AB{cell_rows[-1]}', 
+            params={'valueInputOption': 'RAW'}, 
+            body={'values': new_data}
+        )
 
 
 if __name__ == '__main__':
