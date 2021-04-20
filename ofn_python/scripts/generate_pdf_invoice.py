@@ -68,7 +68,7 @@ def run():
 
             print(i, invoice_no)
             
-            pdf_invoice = PDFInvoice(invoice_no, shop_data, order_data)
+            pdf_invoice = PDFInvoice(server_name, headers, params, invoice_no, shop_data, order_data)
             pdf_invoice.generate(styles)
 
             doc.build(pdf_invoice.body, onFirstPage=add_bank_info, onLaterPages=add_bank_info)

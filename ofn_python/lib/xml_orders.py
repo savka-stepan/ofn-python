@@ -92,9 +92,9 @@ class XMLOrder:
 
         return correction
 
-    def __get_product_data(self, item):
+    def __get_product_data(self, product_name):
         '''Get product details.'''
-        url = f"{self.server_name}/api/products/bulk_products?q[name_eq]={item['variant']['product_name']}"
+        url = f"{self.server_name}/api/products/bulk_products?q[name_eq]={product_name}"
         response = requests.get(url, headers=self.headers, params=self.params)
         product_data = response.json()
         return product_data
@@ -102,7 +102,7 @@ class XMLOrder:
     def __make_order_item_correction(self, item):
         '''Make order item correction.'''
         correction = {}
-        product_data = self.__get_product_data(item)
+        product_data = self.__get_product_data(item['variant']['product_name'])
 
         try:
             product = product_data['products'][0]

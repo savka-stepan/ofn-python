@@ -22,15 +22,11 @@ class InvoiceNo:
 
 class PDFInvoice:
 
-    server_name = 'https://openfoodnetwork.de'
-    headers = {
-        'Accept': 'application/json;charset=UTF-8',
-        'Content-Type': 'application/json'
-    }
-    params = (('token', os.environ['OPENFOODNETWORK_API_KEY']),)
-
-    def __init__(self, invoice_no, shop_data, order_data):
+    def __init__(self, server_name, headers, params, invoice_no, shop_data, order_data):
         self.body = []
+        self.server_name = server_name
+        self.headers = headers
+        self.params = params
         self.invoice_no = invoice_no
         self.shop_data = shop_data
         self.order_data = order_data
@@ -49,7 +45,7 @@ class PDFInvoice:
         <font size="8">{self.shop_data["address"]["zipcode"]} {self.shop_data["address"]["city"]}</font><br/>\
         <font size="8">{self.shop_data["email_address"][::-1]}</font><br/>\
         <font size="8">{self.shop_data["phone"]}</font><br/>\
-        <font size="8">St.-Nr. 327 5728 1746</font><br/>', styles["align_right"])
+        <font size="8">St.-Nr. 336/5802/6337</font><br/>', styles["align_right"])
 
         t = Table([['', logo], [p1, p2]])
         table_style = TableStyle([('ALIGN', (0, 0), (-1, -1), 'RIGHT')])
@@ -106,8 +102,10 @@ class PDFInvoice:
             tax_rate_2 = '7.00'
             tax_rate_3 = '10.70'
 
+        items_count = 0
         for count, i in enumerate(self.order_data['line_items']):
-            print(i["variant"]["product_name"])
+            print(i["variant"]["product_name"], i["quantity"], i["price"])
+            items_count = count
 
             if count % 17 == 0 and count > 0:
                 t = Table(data, colWidths=(89*mm, 25*mm, 25*mm, 25*mm, 25*mm))
@@ -130,8 +128,13 @@ class PDFInvoice:
             except IndexError:
                 product_data = None
 
+            producer_name = ''
+            total_price = int(i["quantity"]) * float(i["price"])
+            tax_rate = '0.00'
+
             if product_data:
                 tax_category_id = product_data['tax_category_id']
+                producer_name = product_data["master"]["producer_name"]
 
                 if tax_category_id == 1:
                     tax_rate = tax_rate_1
@@ -142,8 +145,6 @@ class PDFInvoice:
                 else:
                     tax_rate = '0.00'
 
-                total_price = int(i["quantity"]) * float(i["price"])
-
                 if tax_rate != '0.00':
                     amounts = {'tax_amount': total_price * (1 - 1 / (1 + float(tax_rate) / 100.0)),
                         'total_price': total_price}
@@ -153,13 +154,13 @@ class PDFInvoice:
                     else:
                         self.tax_rates[tax_rate] = [amounts]
 
-                cell1 = [Paragraph(f'<font size="8"><b>{i["variant"]["product_name"]}</b> ({i["variant"]["unit_to_display"]})</font>', styles["Normal"]),
-                        Paragraph(f'<font size="7"><i>{product_data["master"]["producer_name"]}</i></font>', styles["Normal"])]
-                cell2 = Paragraph(f'<font size="8">{i["quantity"]}</font>', styles["align_right"])
-                cell3 = Paragraph(f'<font size="8">{round(float(i["price"]), 2):.2f} €</font>', styles["align_right"])
-                cell4 = Paragraph(f'<font size="8">{round(total_price, 2):.2f} €</font>', styles["align_right"])
-                cell5 = Paragraph(f'<font size="8">{round(float(tax_rate), 2):.2f} %</font>', styles["align_right"])
-                data.append([cell1, cell2, cell3, cell4, cell5])
+            cell1 = [Paragraph(f'<font size="8"><b>{i["variant"]["product_name"]}</b> {i["variant"]["unit_to_display"]}</font>', styles["Normal"]),
+                    Paragraph(f'<font size="7"><i>{producer_name}</i></font>', styles["Normal"])]
+            cell2 = Paragraph(f'<font size="8">{i["quantity"]}</font>', styles["align_right"])
+            cell3 = Paragraph(f'<font size="8">{round(float(i["price"]), 2):.2f} €</font>', styles["align_right"])
+            cell4 = Paragraph(f'<font size="8">{round(total_price, 2):.2f} €</font>', styles["align_right"])
+            cell5 = Paragraph(f'<font size="8">{round(float(tax_rate), 2):.2f} %</font>', styles["align_right"])
+            data.append([cell1, cell2, cell3, cell4, cell5])
 
         shipping_tax_rate = tax_rate_1
         shipping1 = float(self.order_data["adjustments"][0]["amount"])
@@ -197,7 +198,7 @@ class PDFInvoice:
         ]))
         self.body.append(t)
 
-        return count
+        return items_count
 
     def __add_total_amounts(self, styles):
         '''Add total amounts section.'''
