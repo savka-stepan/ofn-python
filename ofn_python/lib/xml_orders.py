@@ -3,7 +3,6 @@ import ftplib
 import io
 import os
 import re
-import requests
 import smtplib
 
 from email import encoders
@@ -11,28 +10,18 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from ofn_python.lib.common.core import OFNData
 from ofn_python.xml_templates.xml_template import get_xml_header, get_xml_body, get_xml_footer
 
 
-class XMLOrder:
+class XMLOrder(OFNData):
     
-    def __init__(self, server_name, headers, params, order_no, eans, postal_codes):
+    def __init__(self, server_name, headers, params):
+        super().__init__(server_name, headers, params)
         self.xml_str = ''
-        self.order_data = {}
-        self.server_name = server_name
-        self.headers = headers
-        self.params = params
-        self.order_no = order_no
-        self.eans = eans
-        self.postal_codes = postal_codes
+        self.header_correction = {}
 
-    def __get_order_data(self):
-        '''Get order details.'''
-        url = f'{self.server_name}/api/orders/{self.order_no}'
-        response = requests.get(url, headers=self.headers, params=self.params)
-        self.order_data = response.json()
-
-    def __get_order_header_correction(self):
+    def get_order_header_correction(self):
         '''Make order header correction.'''
         correction = {}
         correction['completed_at'] = dt.datetime.strptime(self.order_data['completed_at'],
@@ -90,19 +79,15 @@ class XMLOrder:
         else:
             correction['remarks'] = ''
 
-        return correction
+        self.header_correction = correction
 
-    def __get_product_data(self, product_name):
-        '''Get product details.'''
-        url = f"{self.server_name}/api/products/bulk_products?q[name_eq]={product_name}"
-        response = requests.get(url, headers=self.headers, params=self.params)
-        product_data = response.json()
-        return product_data
+    def add_xml_header(self):
+        self.xml_str = get_xml_header(self.order_data, self.header_correction)
 
-    def __make_order_item_correction(self, item):
+    def __make_order_item_correction(self, item, eans):
         '''Make order item correction.'''
         correction = {}
-        product_data = self.__get_product_data(item['variant']['product_name'])
+        product_data = self.get_product_data(item['variant']['product_name'])
 
         try:
             product = product_data['products'][0]
@@ -142,7 +127,7 @@ class XMLOrder:
             correction['tax_rate'] = '0.00'
 
         # Get EAN from google sheet
-        found_sku = self.eans.loc[self.eans['sku'] == item['variant']['sku']]
+        found_sku = eans.loc[eans['sku'] == item['variant']['sku']]
         if not found_sku.empty:
             found_ean = found_sku.iloc[0]['EAN']
             if found_ean == '':
@@ -160,13 +145,13 @@ class XMLOrder:
 
         return correction
 
-    def __iterate_items(self):
+    def add_xml_body(self, eans):
         '''Iterate through products.'''
         print('Products:')
         skus_wrong_format = []
         for count, item in enumerate(self.order_data['line_items'], 1):
             print(item['variant']['sku'])
-            correction = self.__make_order_item_correction(item)
+            correction = self.__make_order_item_correction(item, eans)
             # Get all skus with wrong format
             if not re.match(r'\b\w{3}\-\w{3}\-\d{3,}\b', item['variant']['sku']):
                 skus_wrong_format.append({'sku': item['variant']['sku'],
@@ -175,7 +160,10 @@ class XMLOrder:
 
         return skus_wrong_format
 
-    def __replace_special_chr(self, ch1, ch2):
+    def add_xml_footer(self):
+        self.xml_str += get_xml_footer(self.order_data)
+
+    def replace_special_chr(self, ch1, ch2):
         '''Replace char1 with char2.'''
         if ch1 in self.xml_str:
             self.xml_str = self.xml_str.replace(ch1, ch2)
@@ -209,7 +197,7 @@ class XMLOrder:
             server.login(sender_email, password)
             server.sendmail(sender_email, receiver, text)
 
-    def __send_email_wrong_sku_format(self, skus_wrong_format):
+    def send_email_wrong_sku_format(self, skus_wrong_format):
         '''Send email with wrong sku format.'''
         receiver = os.environ['EMAIL_OFN']
         subject = 'SKU Fehler in Bauernbox'
@@ -219,11 +207,11 @@ class XMLOrder:
         body += '<br>bitte prüfen.'
         self.__send_email(receiver, subject, body, None, None)
 
-    def __send_email_zip_not_in_range(self, order, delivery_zip):
+    def send_email_zip_not_in_range(self, order_no, delivery_zip):
         '''Send email if zipcode not in certain range.'''
         receiver = os.environ['EMAIL_OFN']
         subject = 'Falsche Postleitzahl in Bauernbox'
-        body = f"Bestellnummer {self.order_data['number']}, Postleitzahl {delivery_zip}<br>bitte prüfen."
+        body = f"Bestellnummer {order_no}, Postleitzahl {delivery_zip}<br>bitte prüfen."
         self.__send_email(receiver, subject, body, None, None)
 
     def send_by_email(self, filename, attchmnt):
@@ -242,18 +230,3 @@ class XMLOrder:
     def save_to_local_storage(self, tree, filename):
         '''Save to local storage.'''
         tree.write(filename, encoding="utf-8", xml_declaration=True, short_empty_elements=False)
-
-    def generate(self):
-        '''General method.'''
-        self.__get_order_data()
-        correction = self.__get_order_header_correction()
-        self.xml_str = get_xml_header(self.order_data, correction)
-        skus_wrong_format = self.__iterate_items()
-        self.xml_str += get_xml_footer(self.order_data)
-        self.__replace_special_chr('&', '&amp;')
-
-        if skus_wrong_format:
-            self.__send_email_wrong_sku_format(skus_wrong_format)
-
-        if correction['delivery_zip'] not in self.postal_codes:
-            self.__send_email_zip_not_in_range(self.order_data, correction['delivery_zip'])

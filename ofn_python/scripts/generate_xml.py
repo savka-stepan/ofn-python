@@ -119,9 +119,21 @@ def run(distributors):
                     print(order.number, order.full_name, order.total, order.completed_at)
 
                     if order.order_cycle_id not in (323, 326):
-                        xml_order = XMLOrder(server_name, headers, params, order.number, eans,
-                            postal_codes)
-                        xml_order.generate()
+                        xml_order = XMLOrder(server_name, headers, params)
+                        xml_order.get_order_data(order.number)
+                        xml_order.get_order_header_correction()
+                        xml_order.add_xml_header()
+                        skus_wrong_format = xml_order.add_xml_body(eans)
+                        xml_order.add_xml_footer()
+                        xml_order.replace_special_chr('&', '&amp;')
+
+                        if skus_wrong_format:
+                            xml_order.send_email_wrong_sku_format(skus_wrong_format)
+
+                        if xml_order.header_correction['delivery_zip'] not in postal_codes:
+                            xml_order.send_email_zip_not_in_range(xml_order.order_data,
+                                xml_order.header_correction['delivery_zip'])
+
                         filename = f"opentransorder{order.number}.xml"
                         tree = ET.ElementTree(ET.fromstring(xml_order.xml_str, ET.XMLParser(encoding='utf-8')))
                         root = tree.getroot()
