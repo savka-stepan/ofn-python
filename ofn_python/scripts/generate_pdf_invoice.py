@@ -8,7 +8,7 @@ from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate
+from reportlab.platypus import SimpleDocTemplate, PageBreak
 
 from ofn_python.lib.common.core_functions import get_data_from_google_sheet
 from ofn_python.lib.pdf_invoices import InvoiceNo, PDFInvoice
@@ -56,10 +56,6 @@ def run():
             invoice_no = last_invoice_no.get_next_invoice_no()
             last_invoice = invoice_no
 
-            order_url = f'{server_name}/api/orders/{i}'
-            response = requests.get(order_url, headers=headers, params=params)
-            order_data = response.json()
-
             stream = io.BytesIO()
             doc = SimpleDocTemplate(stream, pagesize=A4, rightMargin=18, leftMargin=18, topMargin=18,
                 bottomMargin=18)
@@ -68,8 +64,17 @@ def run():
 
             print(i, invoice_no)
             
-            pdf_invoice = PDFInvoice(server_name, headers, params, invoice_no, shop_data, order_data)
-            pdf_invoice.generate(styles)
+            pdf_invoice = PDFInvoice(server_name, headers, params)
+            pdf_invoice.get_order_data(i)
+            pdf_invoice.add_header(shop_data, styles)
+            pdf_invoice.add_dates_and_no(invoice_no, styles)
+            items_count = pdf_invoice.add_table(shop_data, styles)
+            if (items_count >= 11 and items_count < 17) or (items_count >= 28 and items_count < 34):
+                pdf_invoice.body.append(PageBreak())
+                pdf_invoice.add_header(shop_data, styles)
+                pdf_invoice.add_dates_and_no(styles)
+            pdf_invoice.add_total_amounts(styles)
+            pdf_invoice.add_footer(styles)
 
             doc.build(pdf_invoice.body, onFirstPage=add_bank_info, onLaterPages=add_bank_info)
             result = stream.getvalue()

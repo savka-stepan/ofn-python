@@ -3,8 +3,10 @@ import io
 import os
 import requests
 
-from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle, PageBreak
+from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
 from reportlab.lib.units import inch, mm
+
+from ofn_python.lib.common.core import OFNData
 
 
 class InvoiceNo:
@@ -20,31 +22,26 @@ class InvoiceNo:
         return next_invoice_no
 
 
-class PDFInvoice:
+class PDFInvoice(OFNData):
 
-    def __init__(self, server_name, headers, params, invoice_no, shop_data, order_data):
+    def __init__(self, server_name, headers, params):
+        super().__init__(server_name, headers, params)
         self.body = []
-        self.server_name = server_name
-        self.headers = headers
-        self.params = params
-        self.invoice_no = invoice_no
-        self.shop_data = shop_data
-        self.order_data = order_data
         self.tax_rates = {}
         self.payment_state = ''
 
-    def __add_header(self, styles):
+    def add_header(self, shop_data, styles):
         '''Add header section.'''
-        logo_response = requests.get(f'{self.server_name}{self.shop_data["logo"]}').content
+        logo_response = requests.get(f'{self.server_name}{shop_data["logo"]}').content
         logo = Image(io.BytesIO(logo_response), inch, inch)
         p1 = Paragraph(f'<font size="10">{self.order_data["ship_address"]["firstname"]} {self.order_data["ship_address"]["lastname"]}</font><br/>\
         <font size="10">{self.order_data["ship_address"]["address1"]}</font><br/>\
         <font size="10">{self.order_data["ship_address"]["zipcode"]} {self.order_data["ship_address"]["city"]}</font><br/>', styles["Normal"])
         p2 = Paragraph(f'<font size="8"><b>{self.order_data["distributor_name"]}</b></font><br/>\
-        <font size="8">{self.shop_data["address"]["address1"]}</font><br/>\
-        <font size="8">{self.shop_data["address"]["zipcode"]} {self.shop_data["address"]["city"]}</font><br/>\
-        <font size="8">{self.shop_data["email_address"][::-1]}</font><br/>\
-        <font size="8">{self.shop_data["phone"]}</font><br/>\
+        <font size="8">{shop_data["address"]["address1"]}</font><br/>\
+        <font size="8">{shop_data["address"]["zipcode"]} {shop_data["address"]["city"]}</font><br/>\
+        <font size="8">{shop_data["email_address"][::-1]}</font><br/>\
+        <font size="8">{shop_data["phone"]}</font><br/>\
         <font size="8">St.-Nr. 336/5802/6337</font><br/>', styles["align_right"])
 
         t = Table([['', logo], [p1, p2]])
@@ -52,7 +49,7 @@ class PDFInvoice:
         t.setStyle(table_style)
         self.body.append(t)
 
-    def __add_dates_and_no(self, styles):
+    def add_dates_and_no(self, invoice_no, styles):
         '''Add invoice dates and invoice no. section'''
         order_date = dt.datetime.strptime(self.order_data["completed_at"],
             '%B %d, %Y').strftime('%d.%m.%Y')
@@ -66,25 +63,18 @@ class PDFInvoice:
             p2 = Paragraph(f'<font size="8">Rechnungsdatum: {order_date}</font><br/>\
             <font size="8">Leistungsdatum: {transaction_date}</font><br/>\
             <font size="8">Bestelldatum: {order_date}</font><br/>\
-            <font size="8">Rechnungsnummer: {self.invoice_no}</font>', styles["Normal"])
+            <font size="8">Rechnungsnummer: {invoice_no}</font>', styles["Normal"])
         else:
             self.payment_state = 'NICHT ABGESCHLOSSEN'
             p2 = Paragraph(f'<font size="8">Rechnungsdatum: {order_date}</font><br/>\
             <font size="8">Leistungsdatum entspricht Rechnungsdatum</font><br/>\
             <font size="8">Bestelldatum: {order_date}</font><br/>\
-            <font size="8">Rechnungsnummer: {self.invoice_no}</font>', styles["Normal"])
+            <font size="8">Rechnungsnummer: {invoice_no}</font>', styles["Normal"])
 
         t = Table([[p1, ''], [p2, '']])
         self.body.append(t)
 
-    def __get_product_data(self, product_name):
-        '''Get product details.'''
-        url = f"{self.server_name}/api/products/bulk_products?q[name_eq]={product_name}"
-        response = requests.get(url, headers=self.headers, params=self.params)
-        product_data = response.json()
-        return product_data
-
-    def __add_table(self, styles):
+    def add_table(self, shop_data, styles):
         '''Add table with items section.'''
         p1 = Paragraph(f'<font size="8"><b>Artikel</b></font>', styles["Normal"])
         p2 = Paragraph(f'<font size="8"><b>Menge</b></font>', styles["align_right"])
@@ -116,12 +106,12 @@ class PDFInvoice:
                 ]))
                 self.body.append(t)
 
-                self.__add_header(styles)
-                self.__add_dates_and_no(styles)
+                self.add_header(shop_data, styles)
+                self.add_dates_and_no(styles)
 
                 data = [[p1, p2, p3, p4, p5]]
 
-            product_data = self.__get_product_data(i["variant"]["product_name"])
+            product_data = self.get_product_data(i["variant"]["product_name"])
 
             try:
                 product_data = product_data['products'][-1]
@@ -200,7 +190,7 @@ class PDFInvoice:
 
         return items_count
 
-    def __add_total_amounts(self, styles):
+    def add_total_amounts(self, styles):
         '''Add total amounts section.'''
         p1 = Paragraph(f'', styles["Normal"])
         p2 = Paragraph(f'<font size="10"><b>Gesamt (inkl. Steuern)</b></font>', styles["align_right"])
@@ -226,7 +216,7 @@ class PDFInvoice:
         self.body.append(t)
         self.body.append(Spacer(1, 24))
 
-    def __add_footer(self, styles):
+    def add_footer(self, styles):
         '''Add footer section.'''
         p1 = Paragraph(f'<font size="8"><b>Zahlungsübersicht</b></font><br/>', styles["Normal"])
         p2 = Paragraph(f'<font size="8">{self.payment_state}</font><br/>', styles["align_right"])
@@ -251,15 +241,3 @@ class PDFInvoice:
             ('BOX', (0, 0), (-1, -1), 0.25, '#000000')
         ]))
         self.body.append(t)
-
-    def generate(self, styles):
-        '''General method.'''
-        self.__add_header(styles)
-        self.__add_dates_and_no(styles)
-        items_count = self.__add_table(styles)
-        if (items_count >= 11 and items_count < 17) or (items_count >= 28 and items_count < 34):
-            self.body.append(PageBreak())
-            self.__add_header(styles)
-            self.__add_dates_and_no(styles)
-        self.__add_total_amounts(styles)
-        self.__add_footer(styles)
