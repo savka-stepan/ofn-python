@@ -55,14 +55,13 @@ def run():
             last_invoice_no = InvoiceNo(last_invoice)
             invoice_no = last_invoice_no.get_next_invoice_no()
             last_invoice = invoice_no
+            print(i, invoice_no)
 
             stream = io.BytesIO()
             doc = SimpleDocTemplate(stream, pagesize=A4, rightMargin=18, leftMargin=18, topMargin=18,
                 bottomMargin=18)
             styles = getSampleStyleSheet()
             styles.add(ParagraphStyle(name='align_right', alignment=TA_RIGHT))
-
-            print(i, invoice_no)
             
             pdf_invoice = PDFInvoice(server_name, headers, params)
             pdf_invoice.get_order_data(i)

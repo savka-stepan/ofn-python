@@ -3,14 +3,9 @@ import ftplib
 import io
 import os
 import re
-import smtplib
-
-from email import encoders
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 from ofn_python.lib.common.core import OFNData
+from ofn_python.lib.common.core_functions import send_email
 from ofn_python.xml_templates.xml_template import get_xml_header, get_xml_body, get_xml_footer
 
 
@@ -164,7 +159,7 @@ class XMLOrder(OFNData):
                 k_rohlmann_items.append({
                     'product_name': f"{item['variant']['product_name']} {item['variant']['unit_to_display']}",
                     'sku': item['variant']['sku'], 'quantity': item['quantity'],
-                    'price:': item['price']
+                    'price': item['price']
                 })
 
             self.xml_str += get_xml_body(item, count, self.order_data, correction)
@@ -179,35 +174,6 @@ class XMLOrder(OFNData):
         if ch1 in self.xml_str:
             self.xml_str = self.xml_str.replace(ch1, ch2)
 
-    def __send_email(self, receiver, subject, body, filename, attchmnt):
-        '''General send email method.'''
-        smtp_server = os.environ['SMTP_SERVER']
-        port = 465
-        sender_email = os.environ['SMTP_SERVER_USER']
-        password = os.environ['SMTP_SERVER_PASSWORD']
-
-        message = MIMEMultipart()
-        message['From'] = sender_email
-        message['To'] = receiver
-        message['Subject'] = subject
-        message['Bcc'] = receiver
-        message.attach(MIMEText(body, 'plain'))
-
-        if attchmnt:
-            attachment = MIMEBase('application', 'xml')
-            attachment.set_payload(attchmnt)
-            encoders.encode_base64(attachment)
-            attachment.add_header(
-                'Content-Disposition',
-                f'attachment; filename= {filename}',
-            )
-            message.attach(attachment)
-
-        text = message.as_string()
-        with smtplib.SMTP_SSL(smtp_server, port) as server:
-            server.login(sender_email, password)
-            server.sendmail(sender_email, receiver, text)
-
     def send_email_wrong_sku_format(self, skus_wrong_format):
         '''Send email with wrong sku format.'''
         receiver = os.environ['EMAIL_OFN']
@@ -216,21 +182,21 @@ class XMLOrder(OFNData):
         for sku_wrong_format in skus_wrong_format:
             body += f"<br>SKU {sku_wrong_format['sku']}, von Produzent {sku_wrong_format['producer']}"
         body += '<br>bitte prüfen.'
-        self.__send_email(receiver, subject, body, None, None)
+        send_email(receiver, subject, body, None, None)
 
     def send_email_zip_not_in_range(self, order_no, delivery_zip):
         '''Send email if zipcode not in certain range.'''
         receiver = os.environ['EMAIL_OFN']
         subject = 'Falsche Postleitzahl in Bauernbox'
         body = f"Bestellnummer {order_no}, Postleitzahl {delivery_zip}<br>bitte prüfen."
-        self.__send_email(receiver, subject, body, None, None)
+        send_email(receiver, subject, body, None, None)
 
     def send_by_email(self, filename, attchmnt):
         '''Send xml file by email.'''
         receiver = os.environ['EMAIL_OPENTRANSORDERS']
         subject = 'Opentransorders'
         body = 'Opentransorders xml files:'
-        self.__send_email(receiver, subject, body, filename, attchmnt)
+        send_email(receiver, subject, body, filename, attchmnt)
 
     def send_to_ftp_server(self, filename, attchmnt):
         '''Send xml file to ftp server.'''
