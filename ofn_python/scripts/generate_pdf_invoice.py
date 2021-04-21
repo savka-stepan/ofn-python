@@ -67,11 +67,11 @@ def run():
             pdf_invoice.get_order_data(i)
             pdf_invoice.add_header(shop_data, styles)
             pdf_invoice.add_dates_and_no(invoice_no, styles)
-            items_count = pdf_invoice.add_table(shop_data, styles)
+            items_count = pdf_invoice.add_table(shop_data, invoice_no, styles)
             if (items_count >= 11 and items_count < 17) or (items_count >= 28 and items_count < 34):
                 pdf_invoice.body.append(PageBreak())
                 pdf_invoice.add_header(shop_data, styles)
-                pdf_invoice.add_dates_and_no(styles)
+                pdf_invoice.add_dates_and_no(invoice_no, styles)
             pdf_invoice.add_total_amounts(styles)
             pdf_invoice.add_footer(styles)
 

@@ -74,7 +74,7 @@ class PDFInvoice(OFNData):
         t = Table([[p1, ''], [p2, '']])
         self.body.append(t)
 
-    def add_table(self, shop_data, styles):
+    def add_table(self, shop_data, invoice_no, styles):
         '''Add table with items section.'''
         p1 = Paragraph(f'<font size="8"><b>Artikel</b></font>', styles["Normal"])
         p2 = Paragraph(f'<font size="8"><b>Menge</b></font>', styles["align_right"])
@@ -107,7 +107,7 @@ class PDFInvoice(OFNData):
                 self.body.append(t)
 
                 self.add_header(shop_data, styles)
-                self.add_dates_and_no(styles)
+                self.add_dates_and_no(invoice_no, styles)
 
                 data = [[p1, p2, p3, p4, p5]]
 
