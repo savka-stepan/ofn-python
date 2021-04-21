@@ -1,4 +1,5 @@
 import datetime as dt
+import json
 import os
 import pandas as pd
 import requests
@@ -116,14 +117,15 @@ def run(distributors):
                 '48153', '48161', '48167', '48165', '48163', '48149']
 
                 for order in orders.itertuples():
-                    print(order.number, order.full_name, order.total, order.completed_at)
+                    order_no = order.number
+                    print(order_no, order.full_name, order.total, order.completed_at)
 
                     if order.order_cycle_id not in (323, 326):
                         xml_order = XMLOrder(server_name, headers, params)
-                        xml_order.get_order_data(order.number)
+                        xml_order.get_order_data(order_no)
                         xml_order.get_order_header_correction()
                         xml_order.add_xml_header()
-                        skus_wrong_format = xml_order.add_xml_body(eans)
+                        skus_wrong_format, k_rohlmann_items = xml_order.add_xml_body(eans)
                         xml_order.add_xml_footer()
                         xml_order.replace_special_chr('&', '&amp;')
 
@@ -134,7 +136,16 @@ def run(distributors):
                             xml_order.send_email_zip_not_in_range(xml_order.order_data,
                                 xml_order.header_correction['delivery_zip'])
 
-                        filename = f"opentransorder{order.number}.xml"
+                        if k_rohlmann_items:
+                            with open(f'{os.environ["PATH_TO_OFN_PYTHON"]}/k_rohlmann_items.json') as json_file:
+                                k_rohlmann_data = json.load(json_file)
+
+                            k_rohlmann_data[order_no] = k_rohlmann_items
+
+                            with open(f'{os.environ["PATH_TO_OFN_PYTHON"]}/k_rohlmann_items.json', 'w') as json_file:
+                                json.dump(k_rohlmann_data, json_file)
+
+                        filename = f"opentransorder{order_no}.xml"
                         tree = ET.ElementTree(ET.fromstring(xml_order.xml_str, ET.XMLParser(encoding='utf-8')))
                         root = tree.getroot()
                         attchmnt = ET.tostring(root, encoding='utf-8', method='xml')
