@@ -167,12 +167,17 @@ class PDFInvoice(OFNData):
             self.tax_rates[shipping_tax_rate] = [amounts1]
             self.tax_rates[shipping_tax_rate] = [amounts2]
 
+        # Transport fee correction
+        transport_fee = self.order_data["adjustments"][1]["label"]
+        if '</span>' in transport_fee:
+            transport_fee = transport_fee.split('</span>')[-1]
+
         f11 = Paragraph(f'<font size="8"><b>{self.order_data["adjustments"][0]["label"]}</b></font>', styles["Normal"])
         f21 = Paragraph(f'', styles["align_right"])
         f31 = Paragraph(f'', styles["align_right"])
         f41 = Paragraph(f'<font size="8">{round(shipping1, 2):.2f} €</font>', styles["align_right"])
         f51 = Paragraph(f'<font size="8">{round(float(shipping_tax_rate), 2):.2f} %</font>', styles["align_right"])
-        f12 = Paragraph(f'<font size="8"><b>{self.order_data["adjustments"][1]["label"]}</b></font>', styles["Normal"])
+        f12 = Paragraph(f'<font size="8"><b>{transport_fee}</b></font>', styles["Normal"])
         f22 = Paragraph(f'', styles["align_right"])
         f32 = Paragraph(f'', styles["align_right"])
         f42 = Paragraph(f'<font size="8">{round(shipping2, 2):.2f} €</font>', styles["align_right"])
