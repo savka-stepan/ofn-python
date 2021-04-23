@@ -82,17 +82,17 @@ class XMLOrder(OFNData):
     def __make_order_item_correction(self, item, eans):
         '''Make order item correction.'''
         correction = {}
-        product_data = self.get_product_data(item['variant']['product_name'])
+        self.get_product_data(item['variant']['product_name'])
 
         try:
-            product = product_data['products'][0]
+            product = self.product_data['products'][0]
         except IndexError:
             product = None
 
         if product:
             # Get manufacturer
             correction['manufacturer_idref'] = product['producer_id']
-            correction['manufacturer_pid'] = product['variants'][0]['producer_name']
+            correction['manufacturer_pid'] = product['master']['producer_name']
 
             # Get tax
             tax_category_id = product['tax_category_id']
@@ -144,7 +144,6 @@ class XMLOrder(OFNData):
         '''Iterate through products.'''
         print('Products:')
         skus_wrong_format = []
-        k_rohlmann_items = []
         for count, item in enumerate(self.order_data['line_items'], 1):
             print(item['variant']['sku'])
             correction = self.__make_order_item_correction(item, eans)
@@ -154,17 +153,9 @@ class XMLOrder(OFNData):
                 skus_wrong_format.append({'sku': item['variant']['sku'],
                     'producer': correction['manufacturer_pid']})
 
-            # Get all products of Kräuterhof Rohlmann supplier
-            if correction['manufacturer_idref'] == 90:
-                k_rohlmann_items.append({
-                    'product_name': f"{item['variant']['product_name']} {item['variant']['unit_to_display']}",
-                    'sku': item['variant']['sku'], 'quantity': item['quantity'],
-                    'price': item['price']
-                })
-
             self.xml_str += get_xml_body(item, count, self.order_data, correction)
 
-        return skus_wrong_format, k_rohlmann_items
+        return skus_wrong_format
 
     def add_xml_footer(self):
         self.xml_str += get_xml_footer(self.order_data)

@@ -125,7 +125,7 @@ def run(distributors):
                         xml_order.get_order_data(order_no)
                         xml_order.get_order_header_correction()
                         xml_order.add_xml_header()
-                        skus_wrong_format, k_rohlmann_items = xml_order.add_xml_body(eans)
+                        skus_wrong_format = xml_order.add_xml_body(eans)
                         xml_order.add_xml_footer()
                         xml_order.replace_special_chr('&', '&amp;')
 
@@ -135,15 +135,6 @@ def run(distributors):
                         if xml_order.header_correction['delivery_zip'] not in postal_codes:
                             xml_order.send_email_zip_not_in_range(xml_order.order_data,
                                 xml_order.header_correction['delivery_zip'])
-
-                        if k_rohlmann_items:
-                            with open(f'{os.environ["PATH_TO_OFN_PYTHON"]}/k_rohlmann_items.json') as json_file:
-                                k_rohlmann_data = json.load(json_file)
-
-                            k_rohlmann_data[order_no] = k_rohlmann_items
-
-                            with open(f'{os.environ["PATH_TO_OFN_PYTHON"]}/k_rohlmann_items.json', 'w') as json_file:
-                                json.dump(k_rohlmann_data, json_file)
 
                         filename = f"opentransorder{order_no}.xml"
                         tree = ET.ElementTree(ET.fromstring(xml_order.xml_str, ET.XMLParser(encoding='utf-8')))

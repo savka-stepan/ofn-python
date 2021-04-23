@@ -8,6 +8,7 @@ class OFNData:
         self.headers = headers
         self.params = params
         self.order_data = {}
+        self.product_data = {}
 
     def get_order_data(self, order_no):
         '''Get order details.'''
@@ -19,5 +20,4 @@ class OFNData:
         '''Get product details.'''
         url = f'{self.server_name}/api/products/bulk_products?q[name_eq]={product_name}'
         response = requests.get(url, headers=self.headers, params=self.params)
-        product_data = response.json()
-        return product_data
+        self.product_data = response.json()

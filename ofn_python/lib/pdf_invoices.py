@@ -111,10 +111,10 @@ class PDFInvoice(OFNData):
 
                 data = [[p1, p2, p3, p4, p5]]
 
-            product_data = self.get_product_data(i["variant"]["product_name"])
+            self.get_product_data(i["variant"]["product_name"])
 
             try:
-                product_data = product_data['products'][-1]
+                product_data = self.product_data['products'][-1]
             except IndexError:
                 product_data = None
 
