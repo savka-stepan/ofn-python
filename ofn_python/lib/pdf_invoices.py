@@ -114,7 +114,7 @@ class PDFInvoice(OFNData):
             self.get_product_data(i["variant"]["product_name"])
 
             try:
-                product_data = self.product_data['products'][-1]
+                product_data = self.product_data['products'][0]
             except IndexError:
                 product_data = None
 
