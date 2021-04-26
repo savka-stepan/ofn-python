@@ -48,11 +48,6 @@ def run():
         for order in orders.itertuples():
             print(order.number)
 
-            body_kr.append(Paragraph(f'<font size="12">Order {order.number}</font>', styles["Normal"]))
-            body_kr.append(Spacer(1, 12))
-            body_tb.append(Paragraph(f'<font size="12">Order {order.number}</font>', styles["Normal"]))
-            body_tb.append(Spacer(1, 12))
-
             p1 = Paragraph(f'<font size="8"><b>Product name</b></font>', styles["Normal"])
             p2 = Paragraph(f'<font size="8"><b>SKU</b></font>', styles["align_right"])
             p3 = Paragraph(f'<font size="8"><b>Qty</b></font>', styles["align_right"])
@@ -79,7 +74,6 @@ def run():
                         p3 = Paragraph(f'<font size="8">{item["quantity"]}</font>', styles["align_right"])
                         p4 = Paragraph(f'<font size="8">{item["price"]}</font>', styles["align_right"])
                         data_kr.append([p1, p2, p3, p4])
-                        is_kr = True
 
                     elif product['master']['producer_name'] == 'Tollkötter Bäckerei ':
                         print('Tollkötter Bäckerei', item["variant"]["product_name"], item["quantity"], item["price"])
@@ -88,25 +82,34 @@ def run():
                         p3 = Paragraph(f'<font size="8">{item["quantity"]}</font>', styles["align_right"])
                         p4 = Paragraph(f'<font size="8">{item["price"]}</font>', styles["align_right"])
                         data_tb.append([p1, p2, p3, p4])
-                        is_tb = True
 
-            t_kr = Table(data_kr, colWidths=(96*mm, 31*mm, 31*mm, 31*mm))
-            t_kr.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), '#e8e8e8'),
-                ('BOX', (0, 0), (-1, -1), 0.25, '#000000'),
-                ('LINEBELOW', (0, 0), (-1, -2), 0.25, '#000000')
-            ]))
-            body_kr.append(t_kr)
-            body_kr.append(Spacer(1, 24))
+            if len(data_kr) > 1:
+                body_kr.append(Paragraph(f'<font size="12">Order {order.number}</font>', styles["Normal"]))
+                body_kr.append(Spacer(1, 12))
 
-            t_tb = Table(data_tb, colWidths=(96*mm, 31*mm, 31*mm, 31*mm))
-            t_tb.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), '#e8e8e8'),
-                ('BOX', (0, 0), (-1, -1), 0.25, '#000000'),
-                ('LINEBELOW', (0, 0), (-1, -2), 0.25, '#000000')
-            ]))
-            body_tb.append(t_tb)
-            body_tb.append(Spacer(1, 24))
+                t_kr = Table(data_kr, colWidths=(96*mm, 31*mm, 31*mm, 31*mm))
+                t_kr.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), '#e8e8e8'),
+                    ('BOX', (0, 0), (-1, -1), 0.25, '#000000'),
+                    ('LINEBELOW', (0, 0), (-1, -2), 0.25, '#000000')
+                ]))
+                body_kr.append(t_kr)
+                body_kr.append(Spacer(1, 24))
+                is_kr = True
+
+            if len(data_tb) > 1:
+                body_tb.append(Paragraph(f'<font size="12">Order {order.number}</font>', styles["Normal"]))
+                body_tb.append(Spacer(1, 12))
+
+                t_tb = Table(data_tb, colWidths=(96*mm, 31*mm, 31*mm, 31*mm))
+                t_tb.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), '#e8e8e8'),
+                    ('BOX', (0, 0), (-1, -1), 0.25, '#000000'),
+                    ('LINEBELOW', (0, 0), (-1, -2), 0.25, '#000000')
+                ]))
+                body_tb.append(t_tb)
+                body_tb.append(Spacer(1, 24))
+                is_tb = True
 
         doc_kr.build(body_kr)
         pdf_file_kr = stream_kr.getvalue()
