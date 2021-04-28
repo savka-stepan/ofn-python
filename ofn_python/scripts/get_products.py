@@ -81,7 +81,7 @@ def get_and_write_new_items(data, sheet_df, worksheet):
 
         variants.fillna('', inplace=True)
         variants_lol = variants.values.tolist()
-        worksheet.append_rows(variants_lol)
+        worksheet.append_rows(variants_lol, table_range='A:P')
 
 
 def run():
@@ -91,42 +91,41 @@ def run():
     worksheet_list = sheet.worksheets()
 
     for worksheet in worksheet_list:
-        if worksheet.title != 'MSB-Geschenkeboxen':
-            print(worksheet.title)
-            sheet_df = pd.DataFrame(worksheet.get_all_records())
-            try:
-                sheet_df = sheet_df[['producer', 'sku', 'name', 'display_name', 'category',
-                'description', 'units', 'unit_type', 'variant_unit_name', 'price', 'on_hand',
-                'available_on', 'on_demand']]
-            except KeyError:
-                sheet_df = pd.DataFrame()
+        print(worksheet.title)
+        sheet_df = pd.DataFrame(worksheet.get_all_records())
+        try:
+            sheet_df = sheet_df[['producer', 'sku', 'name', 'display_name', 'category',
+            'description', 'units', 'unit_type', 'variant_unit_name', 'price', 'on_hand',
+            'available_on', 'on_demand']]
+        except KeyError:
+            sheet_df = pd.DataFrame()
 
-            if not sheet_df.empty:
-                sheet_df['sku'] = sheet_df['sku'].apply(lambda x: str(x))
-                producer = sheet_df.at[0, 'producer']
+        if not sheet_df.empty:
+            sheet_df['sku'] = sheet_df['sku'].apply(lambda x: str(x))
+            producer = sheet_df.at[0, 'producer']
 
-                url = f'https://openfoodnetwork.de/api/products/bulk_products?q[supplier_name_cont]={producer}&per_page=100'
-                headers = {
-                    'Accept': 'application/json;charset=UTF-8',
-                    'Content-Type': 'application/json'
-                }
-                params = (('token', os.environ['OPENFOODNETWORK_API_KEY']),)
-                response = requests.get(url, headers=headers, params=params)
-                data = response.json()
+            url = f'https://openfoodnetwork.de/api/products/bulk_products?q[supplier_name_cont]={producer}&per_page=100'
+            headers = {
+                'Accept': 'application/json;charset=UTF-8',
+                'Content-Type': 'application/json'
+            }
+            params = (('token', os.environ['OPENFOODNETWORK_API_KEY']),)
+            response = requests.get(url, headers=headers, params=params)
+            data = response.json()
 
-                if data['products']:
-                    get_and_write_new_items(data, sheet_df, worksheet)
+            if data['products']:
+                get_and_write_new_items(data, sheet_df, worksheet)
 
-                    if len(data['products']) == 100:
-                        pages_count = data['pagination']['pages'] + 1
+                if len(data['products']) == 100:
+                    pages_count = data['pagination']['pages'] + 1
 
-                        for i in range(2, pages_count):
-                            url = f'https://openfoodnetwork.de/api/products/bulk_products?q[supplier_name_cont]={producer}&per_page=100&page={i}'
-                            response = requests.get(url, headers=headers, params=params)
-                            data_i = response.json()
+                    for i in range(2, pages_count):
+                        url = f'https://openfoodnetwork.de/api/products/bulk_products?q[supplier_name_cont]={producer}&per_page=100&page={i}'
+                        response = requests.get(url, headers=headers, params=params)
+                        data_i = response.json()
 
-                            if data_i['products']:
-                                get_and_write_new_items(data_i, sheet_df, worksheet)
+                        if data_i['products']:
+                            get_and_write_new_items(data_i, sheet_df, worksheet)
 
             print('---')
 
