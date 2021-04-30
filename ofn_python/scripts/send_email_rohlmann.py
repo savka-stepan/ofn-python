@@ -120,10 +120,14 @@ def run():
         stream_tb.close()
 
         if is_kr:
-            send_email(os.environ['EMAIL_OFN'], "Kräuterhof Rohlmann today's items", '',
+            receivers = ['info@kraeuterhof-rohlmann.de', 'Henry.rohlmann@gmx.de',
+            'hendirk@hof-homann.de']
+            send_email(receivers, "Kräuterhof Rohlmann today's items", '',
                 'KrauterhofRohlmann.pdf', pdf_file_kr, file_extension='pdf')
         if is_tb:
-            send_email(os.environ['EMAIL_OFN'], "Tollkötter Bäckerei today's items", '',
+            receivers = ['Mersmannsstiege@Tollkoetter.onmicrosoft.com',
+            'zentrale@tollkoetter.onmicrosoft.com', 'hendirk@hof-homann.de']
+            send_email(receivers, "Tollkötter Bäckerei today's items", '',
                 'TollkotterBackerei.pdf', pdf_file_tb, file_extension='pdf')
 
 if __name__ == '__main__':

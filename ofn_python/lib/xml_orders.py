@@ -167,27 +167,27 @@ class XMLOrder(OFNData):
 
     def send_email_wrong_sku_format(self, skus_wrong_format):
         '''Send email with wrong sku format.'''
-        receiver = os.environ['EMAIL_OFN']
+        receivers = [os.environ['EMAIL_OFN'],]
         subject = 'SKU Fehler in Bauernbox'
         body = 'Es gab ein paar Fehler mit:'
         for sku_wrong_format in skus_wrong_format:
             body += f"<br>SKU {sku_wrong_format['sku']}, von Produzent {sku_wrong_format['producer']}"
         body += '<br>bitte prüfen.'
-        send_email(receiver, subject, body, None, None)
+        send_email(receivers, subject, body, None, None)
 
     def send_email_zip_not_in_range(self, order_no, delivery_zip):
         '''Send email if zipcode not in certain range.'''
-        receiver = os.environ['EMAIL_OFN']
+        receivers = [os.environ['EMAIL_OFN'],]
         subject = 'Falsche Postleitzahl in Bauernbox'
         body = f"Bestellnummer {order_no}, Postleitzahl {delivery_zip}<br>bitte prüfen."
-        send_email(receiver, subject, body, None, None)
+        send_email(receivers, subject, body, None, None)
 
     def send_by_email(self, filename, attchmnt):
         '''Send xml file by email.'''
-        receiver = os.environ['EMAIL_OPENTRANSORDERS']
+        receivers = [os.environ['EMAIL_OPENTRANSORDERS'],]
         subject = 'Opentransorders'
         body = 'Opentransorders xml files:'
-        send_email(receiver, subject, body, filename, attchmnt)
+        send_email(receivers, subject, body, filename, attchmnt)
 
     def send_to_ftp_server(self, filename, attchmnt):
         '''Send xml file to ftp server.'''
