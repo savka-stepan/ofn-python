@@ -119,16 +119,18 @@ def run():
         pdf_file_tb = stream_tb.getvalue()
         stream_tb.close()
 
+        cc = ['bestellungen@bauernbox.com',]
         if is_kr:
             receivers = ['info@kraeuterhof-rohlmann.de', 'Henry.rohlmann@gmx.de',
             'hendirk@hof-homann.de']
             send_email(receivers, "Kräuterhof Rohlmann today's items", '',
-                'KrauterhofRohlmann.pdf', pdf_file_kr, file_extension='pdf')
+                'KrauterhofRohlmann.pdf', pdf_file_kr, file_extension='pdf', cc=cc)
         if is_tb:
             receivers = ['Mersmannsstiege@Tollkoetter.onmicrosoft.com',
             'zentrale@tollkoetter.onmicrosoft.com', 'hendirk@hof-homann.de']
             send_email(receivers, "Tollkötter Bäckerei today's items", '',
-                'TollkotterBackerei.pdf', pdf_file_tb, file_extension='pdf')
+                'TollkotterBackerei.pdf', pdf_file_tb, file_extension='pdf', cc=cc)
+
 
 if __name__ == '__main__':
     run()

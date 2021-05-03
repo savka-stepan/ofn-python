@@ -47,7 +47,7 @@ def get_data_from_google_sheet(credentials_file, filename, columns, worksheet_na
     return data, sheet
 
 
-def send_email(receivers, subject, body, filename, attchmnt, file_extension='xml'):
+def send_email(receivers, subject, body, filename, attchmnt, file_extension='xml', cc=None):
     '''General send email method.'''
     smtp_server = os.environ['SMTP_SERVER']
     port = 465
@@ -57,6 +57,11 @@ def send_email(receivers, subject, body, filename, attchmnt, file_extension='xml
     message = MIMEMultipart()
     message['From'] = sender_email
     message['To'] = ', '.join(receivers)
+    if cc:
+        message['CC'] = ', '.join(cc)
+        toaddr = receivers + cc
+    else:
+        toaddr = receivers
     message['Subject'] = subject
     message.attach(MIMEText(body, 'plain'))
 
@@ -73,4 +78,4 @@ def send_email(receivers, subject, body, filename, attchmnt, file_extension='xml
     text = message.as_string()
     with smtplib.SMTP_SSL(smtp_server, port) as server:
         server.login(sender_email, password)
-        server.sendmail(sender_email, receivers, text)
+        server.sendmail(sender_email, toaddr, text)
