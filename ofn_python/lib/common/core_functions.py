@@ -12,14 +12,16 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 
 SCOPES = [
-    'https://spreadsheets.google.com/feeds',
-    'https://www.googleapis.com/auth/drive',
-    'https://www.googleapis.com/auth/spreadsheets'
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/spreadsheets",
 ]
 
 
-def get_data_from_google_sheet(credentials_file, filename, columns, worksheet_name=None):
-    '''Get data from Google sheet.'''
+def get_data_from_google_sheet(
+    credentials_file, filename, columns, worksheet_name=None
+):
+    """Get data from Google sheet."""
     CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/{credentials_file}'
     creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
     client = gspread.authorize(creds)
@@ -35,7 +37,7 @@ def get_data_from_google_sheet(credentials_file, filename, columns, worksheet_na
             except KeyError:
                 sheet_df = pd.DataFrame(columns=columns)
             data = data.append(sheet_df, ignore_index=True)
-            
+
     else:
         worksheet = sheet.worksheet(worksheet_name)
         data = pd.DataFrame(worksheet.get_all_records())
@@ -47,31 +49,33 @@ def get_data_from_google_sheet(credentials_file, filename, columns, worksheet_na
     return data, sheet
 
 
-def send_email(receivers, subject, body, filename, attchmnt, file_extension='xml', cc=None):
-    '''General send email method.'''
-    smtp_server = os.environ['SMTP_SERVER']
+def send_email(
+    receivers, subject, body, filename, attchmnt, file_extension="xml", cc=None
+):
+    """General send email method."""
+    smtp_server = os.environ["SMTP_SERVER"]
     port = 465
-    sender_email = os.environ['SMTP_SERVER_USER']
-    password = os.environ['SMTP_SERVER_PASSWORD']
+    sender_email = os.environ["SMTP_SERVER_USER"]
+    password = os.environ["SMTP_SERVER_PASSWORD"]
 
     message = MIMEMultipart()
-    message['From'] = sender_email
-    message['To'] = ', '.join(receivers)
+    message["From"] = sender_email
+    message["To"] = ", ".join(receivers)
     if cc:
-        message['CC'] = ', '.join(cc)
+        message["CC"] = ", ".join(cc)
         toaddr = receivers + cc
     else:
         toaddr = receivers
-    message['Subject'] = subject
-    message.attach(MIMEText(body, 'plain'))
+    message["Subject"] = subject
+    message.attach(MIMEText(body, "plain"))
 
     if attchmnt:
-        attachment = MIMEBase('application', file_extension)
+        attachment = MIMEBase("application", file_extension)
         attachment.set_payload(attchmnt)
         encoders.encode_base64(attachment)
         attachment.add_header(
-            'Content-Disposition',
-            f'attachment; filename= {filename}',
+            "Content-Disposition",
+            f"attachment; filename= {filename}",
         )
         message.attach(attachment)
 
