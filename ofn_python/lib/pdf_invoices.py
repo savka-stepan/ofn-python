@@ -70,6 +70,7 @@ class PDFInvoice(OFNData):
                 f'<font size="8">Rechnungsdatum: {order_date}</font><br/>\
             <font size="8">Leistungsdatum: {transaction_date}</font><br/>\
             <font size="8">Bestelldatum: {order_date}</font><br/>\
+            <font size="8">Bestellnummer: {self.order_data["number"]}</font><br/>\
             <font size="8">Rechnungsnummer: {invoice_no}</font>',
                 styles["Normal"],
             )
@@ -79,6 +80,7 @@ class PDFInvoice(OFNData):
                 f'<font size="8">Rechnungsdatum: {order_date}</font><br/>\
             <font size="8">Leistungsdatum entspricht Rechnungsdatum</font><br/>\
             <font size="8">Bestelldatum: {order_date}</font><br/>\
+            <font size="8">Bestellnummer: {self.order_data["number"]}</font><br/>\
             <font size="8">Rechnungsnummer: {invoice_no}</font>',
                 styles["Normal"],
             )
@@ -201,56 +203,33 @@ class PDFInvoice(OFNData):
             data.append([cell1, cell2, cell3, cell4, cell5])
 
         shipping_tax_rate = tax_rate_1
-        shipping1 = float(self.order_data["adjustments"][0]["amount"])
-        shipping2 = float(self.order_data["adjustments"][1]["amount"])
-        amounts1 = {
-            "tax_amount": shipping1 * (1 - 1 / (1 + float(shipping_tax_rate) / 100.0)),
-            "total_price": shipping1,
-        }
-        amounts2 = {
-            "tax_amount": shipping2 * (1 - 1 / (1 + float(shipping_tax_rate) / 100.0)),
-            "total_price": shipping2,
-        }
+        for adjustment in self.order_data["adjustments"]:
+            if adjustment["originator_type"] == "Spree::ShippingMethod":
+                shipping_amount = float(adjustment["amount"])
+                shipping_amounts = {
+                    "tax_amount": shipping_amount * (1 - 1 / (1 + float(shipping_tax_rate) / 100.0)),
+                    "total_price": shipping_amount,
+                }
 
-        if shipping_tax_rate in self.tax_rates.keys():
-            self.tax_rates[shipping_tax_rate].append(amounts1)
-            self.tax_rates[shipping_tax_rate].append(amounts2)
-        else:
-            self.tax_rates[shipping_tax_rate] = [amounts1]
-            self.tax_rates[shipping_tax_rate] = [amounts2]
+                if shipping_tax_rate in self.tax_rates.keys():
+                    self.tax_rates[shipping_tax_rate].append(shipping_amounts)
+                else:
+                    self.tax_rates[shipping_tax_rate] = [shipping_amounts]
 
-        # Transport fee correction
-        transport_fee = self.order_data["adjustments"][1]["label"]
-        if "</span>" in transport_fee:
-            transport_fee = transport_fee.split("</span>")[-1]
-
-        f11 = Paragraph(
-            f'<font size="8"><b>{self.order_data["adjustments"][0]["label"]}</b></font>',
-            styles["Normal"],
-        )
-        f21 = Paragraph(f"", styles["align_right"])
-        f31 = Paragraph(f"", styles["align_right"])
-        f41 = Paragraph(
-            f'<font size="8">{round(shipping1, 2):.2f} €</font>', styles["align_right"]
-        )
-        f51 = Paragraph(
-            f'<font size="8">{round(float(shipping_tax_rate), 2):.2f} %</font>',
-            styles["align_right"],
-        )
-        f12 = Paragraph(
-            f'<font size="8"><b>{transport_fee}</b></font>', styles["Normal"]
-        )
-        f22 = Paragraph(f"", styles["align_right"])
-        f32 = Paragraph(f"", styles["align_right"])
-        f42 = Paragraph(
-            f'<font size="8">{round(shipping2, 2):.2f} €</font>', styles["align_right"]
-        )
-        f52 = Paragraph(
-            f'<font size="8">{round(float(shipping_tax_rate), 2):.2f} %</font>',
-            styles["align_right"],
-        )
-        data.append([f11, f21, f31, f41, f51])
-        data.append([f12, f22, f32, f42, f52])
+                f11 = Paragraph(
+                    f'<font size="8"><b>{adjustment["label"]}</b></font>',
+                    styles["Normal"],
+                )
+                f21 = Paragraph(f"", styles["align_right"])
+                f31 = Paragraph(f"", styles["align_right"])
+                f41 = Paragraph(
+                    f'<font size="8">{round(shipping_amount, 2):.2f} €</font>', styles["align_right"]
+                )
+                f51 = Paragraph(
+                    f'<font size="8">{round(float(shipping_tax_rate), 2):.2f} %</font>',
+                    styles["align_right"],
+                )
+                data.append([f11, f21, f31, f41, f51])
 
         t = Table(data, colWidths=(89 * mm, 25 * mm, 25 * mm, 25 * mm, 25 * mm))
         t.setStyle(
