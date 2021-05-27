@@ -88,7 +88,7 @@ class PDFInvoice(OFNData):
         t = Table([[p1, ""], [p2, ""]])
         self.body.append(t)
 
-    def add_table(self, shop_data, invoice_no, styles):
+    def add_table(self, shop_data, invoice_no, producers_ids, styles):
         """Add table with items section."""
         p1 = Paragraph(f'<font size="8"><b>Artikel</b></font>', styles["Normal"])
         p2 = Paragraph(f'<font size="8"><b>Menge</b></font>', styles["align_right"])
@@ -141,6 +141,8 @@ class PDFInvoice(OFNData):
                 data = [[p1, p2, p3, p4, p5]]
 
             self.get_product_data(i["variant"]["product_name"])
+
+            self.product_data["products"] = [i for i in self.product_data["products"] if i["producer_id"] in producers_ids]
 
             try:
                 product_data = self.product_data["products"][0]

@@ -36,6 +36,7 @@ def run():
     params = (("token", os.environ["OPENFOODNETWORK_API_KEY"]),)
     response = requests.get(shop_url, headers=headers, params=params)
     shop_data = response.json()
+    producers_ids = [producer["id"] for producer in shop_data["producers"]]
 
     credentials_file = "openfoodnetwork-9e79b28ba490.json"
     sheet_df, sheet = get_data_from_google_sheet(
@@ -75,7 +76,7 @@ def run():
             pdf_invoice.get_order_data(i)
             pdf_invoice.add_header(shop_data, styles)
             pdf_invoice.add_dates_and_no(invoice_no, styles)
-            items_count = pdf_invoice.add_table(shop_data, invoice_no, styles)
+            items_count = pdf_invoice.add_table(shop_data, invoice_no, producers_ids, styles)
             if (items_count >= 11 and items_count < 17) or (
                 items_count >= 28 and items_count < 34
             ):
