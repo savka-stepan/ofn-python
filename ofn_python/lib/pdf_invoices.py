@@ -142,7 +142,11 @@ class PDFInvoice(OFNData):
 
             self.get_product_data(i["variant"]["product_name"])
 
-            self.product_data["products"] = [i for i in self.product_data["products"] if i["producer_id"] in producers_ids]
+            self.product_data["products"] = [
+                i
+                for i in self.product_data["products"]
+                if i["producer_id"] in producers_ids
+            ]
 
             try:
                 product_data = self.product_data["products"][0]

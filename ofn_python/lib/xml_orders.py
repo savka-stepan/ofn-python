@@ -120,10 +120,16 @@ class XMLOrder(OFNData):
     def add_xml_header(self):
         self.xml_str = get_xml_header(self.order_data, self.header_correction)
 
-    def __make_order_item_correction(self, item, eans):
+    def __make_order_item_correction(self, item, producers_ids, eans):
         """Make order item correction."""
         correction = {}
         self.get_product_data(item["variant"]["product_name"])
+
+        self.product_data["products"] = [
+            i
+            for i in self.product_data["products"]
+            if i["producer_id"] in producers_ids
+        ]
 
         try:
             product = self.product_data["products"][0]
@@ -185,13 +191,13 @@ class XMLOrder(OFNData):
 
         return correction
 
-    def add_xml_body(self, eans):
+    def add_xml_body(self, producers_ids, eans):
         """Iterate through products."""
         print("Products:")
         skus_wrong_format = []
         for count, item in enumerate(self.order_data["line_items"], 1):
             print(item["variant"]["sku"])
-            correction = self.__make_order_item_correction(item, eans)
+            correction = self.__make_order_item_correction(item, producers_ids, eans)
 
             # Get all skus with wrong format
             if not re.match(r"\b\w{3}\-\w{3}\-\d{3,}\b", item["variant"]["sku"]):

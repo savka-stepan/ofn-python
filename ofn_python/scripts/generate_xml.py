@@ -146,6 +146,11 @@ def run(distributors, regenerate_order_no=None):
                         inplace=True,
                     )
 
+                    shop_url = f"{server_name}/api/shops/36"
+                    shop_response = requests.get(shop_url, headers=headers, params=params)
+                    shop_data = shop_response.json()
+                    producers_ids = [producer["id"] for producer in shop_data["producers"]]
+
                     eans = get_data_from_google_sheet(
                         credentials_file,
                         "Produktliste_MSB_XXX_Artikelstammdaten",
@@ -176,7 +181,7 @@ def run(distributors, regenerate_order_no=None):
                             xml_order.get_order_data(order_no)
                             xml_order.get_order_header_correction()
                             xml_order.add_xml_header()
-                            skus_wrong_format = xml_order.add_xml_body(eans)
+                            skus_wrong_format = xml_order.add_xml_body(producers_ids, eans)
                             xml_order.add_xml_footer()
                             xml_order.replace_special_chr("&", "&amp;")
 
@@ -266,6 +271,10 @@ def run(distributors, regenerate_order_no=None):
         xml_order.get_order_data(regenerate_order_no)
 
         if xml_order.order_data:
+            shop_url = f"{server_name}/api/shops/36"
+            shop_response = requests.get(shop_url, headers=headers, params=params)
+            shop_data = shop_response.json()
+            producers_ids = [producer["id"] for producer in shop_data["producers"]]
             eans = get_data_from_google_sheet(
                 "openfoodnetwork-9e79b28ba490.json",
                 "Produktliste_MSB_XXX_Artikelstammdaten",
@@ -273,7 +282,7 @@ def run(distributors, regenerate_order_no=None):
             )[0]
             xml_order.get_order_header_correction()
             xml_order.add_xml_header()
-            skus_wrong_format = xml_order.add_xml_body(eans)
+            skus_wrong_format = xml_order.add_xml_body(producers_ids, eans)
             xml_order.add_xml_footer()
             xml_order.replace_special_chr("&", "&amp;")
             filename = f"opentransorder{regenerate_order_no}.xml"

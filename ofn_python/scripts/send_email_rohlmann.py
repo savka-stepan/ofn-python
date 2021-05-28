@@ -31,6 +31,11 @@ def run():
     }
     params = (("token", os.environ["OPENFOODNETWORK_API_KEY"]),)
 
+    shop_url = f"{server_name}/api/shops/36"
+    response = requests.get(shop_url, headers=headers, params=params)
+    shop_data = response.json()
+    producers_ids = [producer["id"] for producer in shop_data["producers"]]
+
     url = f"{server_name}/api/orders?q[completed_at_gt]={today}&q[state_eq]=complete&q[distributor_id_eq]=36"
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
@@ -87,6 +92,12 @@ def run():
 
             for item in ofn_data.order_data["line_items"]:
                 ofn_data.get_product_data(item["variant"]["product_name"])
+
+                ofn_data.product_data["products"] = [
+                    i
+                    for i in ofn_data.product_data["products"]
+                    if i["producer_id"] in producers_ids
+                ]
 
                 try:
                     product = ofn_data.product_data["products"][0]
