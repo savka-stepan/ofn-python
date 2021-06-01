@@ -265,6 +265,11 @@ class PDFInvoice(OFNData):
         data = [[p1, p2, p3]]
 
         taxes_total_amount = 0.0
+        tax_amount_5 = 0.0
+        tax_amount_7 = 0.0
+        tax_amount_10 = 0.0
+        tax_amount_16 = 0.0
+        tax_amount_19 = 0.0
         for key, value in self.tax_rates.items():
             tax_total_amount = round(sum([d["tax_amount"] for d in value]), 2)
             total_amount_without_tax = (
@@ -282,6 +287,17 @@ class PDFInvoice(OFNData):
             data.append([p1, p2, p3])
             taxes_total_amount += tax_total_amount
 
+            if key == "5.00":
+                tax_amount_5 = round(sum([d["tax_amount"] for d in value]), 2)
+            if key == "7.00":
+                tax_amount_7 = round(sum([d["tax_amount"] for d in value]), 2)
+            if key == "10.70":
+                tax_amount_10 = round(sum([d["tax_amount"] for d in value]), 2)
+            if key == "16.00":
+                tax_amount_16 = round(sum([d["tax_amount"] for d in value]), 2)
+            if key == "19.00":
+                tax_amount_19 = round(sum([d["tax_amount"] for d in value]), 2)
+
         p1 = Paragraph(f"", styles["Normal"])
         p2 = Paragraph(
             f'<font size="8">Summe (zzgl. Steuern)</font>', styles["align_right"]
@@ -292,9 +308,13 @@ class PDFInvoice(OFNData):
         )
         data.append([p1, p2, p3])
 
+        taxes_total_amount = round(taxes_total_amount, 2)
+
         t = Table(data)
         self.body.append(t)
         self.body.append(Spacer(1, 24))
+
+        return (tax_amount_5, tax_amount_7, tax_amount_10, tax_amount_16, tax_amount_19, taxes_total_amount)
 
     def add_footer(self, styles):
         """Add footer section."""

@@ -27,7 +27,6 @@ def add_bank_info(canvas, doc):
 def run():
 
     server_name = "https://openfoodnetwork.de"
-
     shop_url = f"{server_name}/api/shops/36"
     headers = {
         "Accept": "application/json;charset=UTF-8",
