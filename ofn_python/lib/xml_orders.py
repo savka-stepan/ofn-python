@@ -125,6 +125,17 @@ class XMLOrder(OFNData):
         correction = {}
         self.get_product_data(item["variant"]["product_name"])
 
+        if not self.product_data["products"]:
+            variant_data = self.get_variants_by_sku(item["variant"]["sku"])
+            
+            try:
+                variant_id = variant_data[0]["id"]
+            except IndexError:
+                variant_id = None
+
+            if variant_id:
+                self.get_product_data_by_variant_id(variant_id)
+
         self.product_data["products"] = [
             i
             for i in self.product_data["products"]
@@ -230,7 +241,7 @@ class XMLOrder(OFNData):
         for sku_wrong_format in skus_wrong_format:
             body += f"<br>SKU {sku_wrong_format['sku']}, von Produzent {sku_wrong_format['producer']}"
         body += "<br>bitte prüfen."
-        send_email(receivers, subject, body, None, None)
+        send_email(receivers, subject, body)
 
     def send_email_zip_not_in_range(self, order_no, delivery_zip):
         """Send email if zipcode not in certain range."""
@@ -239,7 +250,7 @@ class XMLOrder(OFNData):
         ]
         subject = "Falsche Postleitzahl in Bauernbox"
         body = f"Bestellnummer {order_no}, Postleitzahl {delivery_zip}<br>bitte prüfen."
-        send_email(receivers, subject, body, None, None)
+        send_email(receivers, subject, body)
 
     def send_by_email(self, filename, attchmnt):
         """Send xml file by email."""
@@ -248,7 +259,7 @@ class XMLOrder(OFNData):
         ]
         subject = "Opentransorders"
         body = "Opentransorders xml files:"
-        send_email(receivers, subject, body, filename, attchmnt)
+        send_email(receivers, subject, body, filename=filename, attchmnt=attchmnt)
 
     def send_to_ftp_server(self, filename, attchmnt):
         """Send xml file to ftp server."""

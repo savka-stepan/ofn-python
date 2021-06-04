@@ -7,6 +7,7 @@ from reportlab.platypus import Paragraph, Spacer, Image, Table, TableStyle
 from reportlab.lib.units import inch, mm
 
 from ofn_python.lib.common.core import OFNData
+from ofn_python.lib.common.core_functions import send_email
 
 
 class InvoiceNo:
@@ -118,6 +119,7 @@ class PDFInvoice(OFNData):
             tax_rate_3 = "10.70"
 
         items_count = 0
+        not_found_products = []
         for count, i in enumerate(self.order_data["line_items"]):
             print(i["variant"]["product_name"], i["quantity"], i["price"])
             items_count = count
@@ -141,6 +143,17 @@ class PDFInvoice(OFNData):
                 data = [[p1, p2, p3, p4, p5]]
 
             self.get_product_data(i["variant"]["product_name"])
+
+            if not self.product_data["products"]:
+                variant_data = self.get_variants_by_sku(i["variant"]["sku"])
+                
+                try:
+                    variant_id = variant_data[0]["id"]
+                except IndexError:
+                    variant_id = None
+
+                if variant_id:
+                    self.get_product_data_by_variant_id(variant_id)
 
             self.product_data["products"] = [
                 i
@@ -182,6 +195,9 @@ class PDFInvoice(OFNData):
                     else:
                         self.tax_rates[tax_rate] = [amounts]
 
+            else:
+                not_found_products.append(i["variant"]["product_name"])
+
             cell1 = [
                 Paragraph(
                     f'<font size="8"><b>{i["variant"]["product_name"]}</b> {i["variant"]["unit_to_display"]}</font>',
@@ -207,6 +223,13 @@ class PDFInvoice(OFNData):
                 styles["align_right"],
             )
             data.append([cell1, cell2, cell3, cell4, cell5])
+
+        if not_found_products:
+            send_email(
+                ["it@bauernbox.com",],
+                "Couldn't find product",
+                f'Order {self.order_data["number"]} products: {not_found_products}'
+            )
 
         shipping_tax_rate = tax_rate_1
         for adjustment in self.order_data["adjustments"]:

@@ -42,13 +42,10 @@ def run():
 
     if data["orders"]:
         orders = (
-            pd.json_normalize(data["orders"]).sort_values("id").reset_index(drop=True)
+            pd.json_normalize(data["orders"])
+            .sort_values("id")
+            .reset_index(drop=True)[["number",]]
         )
-        orders = orders[
-            [
-                "number",
-            ]
-        ]
 
         stream_kr = io.BytesIO()
         stream_tb = io.BytesIO()
@@ -92,6 +89,17 @@ def run():
 
             for item in ofn_data.order_data["line_items"]:
                 ofn_data.get_product_data(item["variant"]["product_name"])
+
+                if not ofn_data.product_data["products"]:
+                    variant_data = ofn_data.get_variants_by_sku(item["variant"]["sku"])
+                    
+                    try:
+                        variant_id = variant_data[0]["id"]
+                    except IndexError:
+                        variant_id = None
+
+                    if variant_id:
+                        ofn_data.get_product_data_by_variant_id(variant_id)
 
                 ofn_data.product_data["products"] = [
                     i
@@ -220,8 +228,8 @@ def run():
                 receivers,
                 "Kräuterhof Rohlmann today's items",
                 "",
-                "KrauterhofRohlmann.pdf",
-                pdf_file_kr,
+                filename="KrauterhofRohlmann.pdf",
+                attchmnt=pdf_file_kr,
                 file_extension="pdf",
                 cc=cc,
             )
@@ -235,8 +243,8 @@ def run():
                 receivers,
                 "Tollkötter Bäckerei today's items",
                 "",
-                "TollkotterBackerei.pdf",
-                pdf_file_tb,
+                filename="TollkotterBackerei.pdf",
+                attchmnt=pdf_file_tb,
                 file_extension="pdf",
                 cc=cc,
             )

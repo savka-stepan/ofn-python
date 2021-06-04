@@ -50,13 +50,13 @@ def get_data_from_google_sheet(
 
 
 def send_email(
-    receivers, subject, body, filename, attchmnt, file_extension="xml", cc=None
+    receivers, subject, body, filename=None, attchmnt=None, file_extension="xml", cc=None
 ):
     """General send email method."""
-    smtp_server = os.environ["SMTP_SERVER"]
+    smtp_server = os.environ.get("SMTP_SERVER")
     port = 465
-    sender_email = os.environ["SMTP_SERVER_USER"]
-    password = os.environ["SMTP_SERVER_PASSWORD"]
+    sender_email = os.environ.get("SMTP_SERVER_USER")
+    password = os.environ.get("SMTP_SERVER_PASSWORD")
 
     message = MIMEMultipart()
     message["From"] = sender_email

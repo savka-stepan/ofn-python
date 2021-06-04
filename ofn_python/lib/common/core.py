@@ -20,3 +20,15 @@ class OFNData:
         url = f"{self.server_name}/api/products/bulk_products?q[name_eq]={product_name}"
         response = requests.get(url, headers=self.headers, params=self.params)
         self.product_data = response.json()
+
+    def get_variants_by_sku(self, sku):
+        """Get variants details."""
+        url = f"{self.server_name}/api/products/bulk_products/variants?q[sku_eq]={sku}"
+        response = requests.get(url, headers=self.headers, params=self.params)
+        return response.json()
+
+    def get_product_data_by_variant_id(self, variant_id):
+        """Get product details by variant id."""
+        url = f"{self.server_name}/api/products/bulk_products?q[variants_id_eq]={variant_id}"
+        response = requests.get(url, headers=self.headers, params=self.params)
+        self.product_data = response.json()
