@@ -121,7 +121,11 @@ class PDFInvoice(OFNData):
         items_count = 0
         not_found_products = []
         for count, i in enumerate(self.order_data["line_items"]):
-            print(i["variant"]["product_name"], i["quantity"], i["price"])
+            product_name = i["variant"]["product_name"]
+            sku = i["variant"]["sku"]
+            quantity = i["quantity"]
+            price = i["price"]
+            print(product_name, quantity, price)
             items_count = count
 
             if count % 17 == 0 and count > 0:
@@ -142,24 +146,39 @@ class PDFInvoice(OFNData):
 
                 data = [[p1, p2, p3, p4, p5]]
 
-            self.get_product_data(i["variant"]["product_name"])
+            if product_name == "Feldsalat ":
+                self.get_product_data_cont(product_name)
+
+                if len(self.product_data["products"]) > 1:
+                    variant_data = self.get_variants_by_sku(sku)
+
+                    for vd in variant_data:
+                        self.get_product_data_by_variant_id(vd["id"])
+
+                        if self.product_data["products"]:
+                            break
+
+            else:
+                self.get_product_data(product_name)
 
             if not self.product_data["products"]:
-                variant_data = self.get_variants_by_sku(i["variant"]["sku"])
-                
-                try:
-                    variant_id = variant_data[0]["id"]
-                except IndexError:
-                    variant_id = None
+                self.get_product_data_cont(product_name)
 
-                if variant_id:
-                    self.get_product_data_by_variant_id(variant_id)
+                if len(self.product_data["products"]) > 1:
+                    variant_data = self.get_variants_by_sku(sku)
 
-            self.product_data["products"] = [
-                i
-                for i in self.product_data["products"]
-                if i["producer_id"] in producers_ids
-            ]
+                    for vd in variant_data:
+                        self.get_product_data_by_variant_id(vd["id"])
+
+                        if self.product_data["products"]:
+                            break
+
+            if len(self.product_data["products"]) > 1:
+                self.product_data["products"] = [
+                    i
+                    for i in self.product_data["products"]
+                    if i["producer_id"] in producers_ids
+                ]
 
             try:
                 product_data = self.product_data["products"][0]
@@ -167,12 +186,13 @@ class PDFInvoice(OFNData):
                 product_data = None
 
             producer_name = ""
-            total_price = int(i["quantity"]) * float(i["price"])
+            total_price = int(quantity) * float(price)
             tax_rate = "0.00"
 
             if product_data:
                 tax_category_id = product_data["tax_category_id"]
                 producer_name = product_data["master"]["producer_name"]
+                print(f"Tax category {tax_category_id}, Producer name {producer_name}")
 
                 if tax_category_id == 1:
                     tax_rate = tax_rate_1
@@ -196,11 +216,11 @@ class PDFInvoice(OFNData):
                         self.tax_rates[tax_rate] = [amounts]
 
             else:
-                not_found_products.append(i["variant"]["product_name"])
+                not_found_products.append(product_name)
 
             cell1 = [
                 Paragraph(
-                    f'<font size="8"><b>{i["variant"]["product_name"]}</b> {i["variant"]["unit_to_display"]}</font>',
+                    f'<font size="8"><b>{product_name}</b> {i["variant"]["unit_to_display"]}</font>',
                     styles["Normal"],
                 ),
                 Paragraph(
@@ -208,10 +228,10 @@ class PDFInvoice(OFNData):
                 ),
             ]
             cell2 = Paragraph(
-                f'<font size="8">{i["quantity"]}</font>', styles["align_right"]
+                f'<font size="8">{quantity}</font>', styles["align_right"]
             )
             cell3 = Paragraph(
-                f'<font size="8">{round(float(i["price"]), 2):.2f} €</font>',
+                f'<font size="8">{round(float(price), 2):.2f} €</font>',
                 styles["align_right"],
             )
             cell4 = Paragraph(
@@ -226,7 +246,7 @@ class PDFInvoice(OFNData):
 
         if not_found_products:
             send_email(
-                ["it@bauernbox.com",],
+                ["it@bauernbox.com", "savka.stepan.92@gmail.com"],
                 "Couldn't find product",
                 f'Order {self.order_data["number"]} products: {not_found_products}'
             )
