@@ -89,7 +89,7 @@ def get_xml_body(item, count, order, correction):
 <PRODUCT_ID>
     <bmecat:SUPPLIER_PID type="supplier_specific">{item['variant']['sku']}</bmecat:SUPPLIER_PID>
     <bmecat:SUPPLIER_IDREF type="supplier_specific">{order['distributor']['id']}</bmecat:SUPPLIER_IDREF>
-    <bmecat:INTERNATIONAL_PID type="ean">{correction['ean']}</bmecat:INTERNATIONAL_PID>
+    <bmecat:INTERNATIONAL_PID type="ean">{item['variant']['sku']}</bmecat:INTERNATIONAL_PID>
     <bmecat:BUYER_PID type="buyer_specific">{order['user_id']}</bmecat:BUYER_PID>
     <bmecat:DESCRIPTION_SHORT lang="deu">{correction['description_short']}</bmecat:DESCRIPTION_SHORT>
     <MANUFACTURER_INFO>

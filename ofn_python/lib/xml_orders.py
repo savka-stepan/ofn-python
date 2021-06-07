@@ -120,7 +120,7 @@ class XMLOrder(OFNData):
     def add_xml_header(self):
         self.xml_str = get_xml_header(self.order_data, self.header_correction)
 
-    def __make_order_item_correction(self, item, producers_ids, eans):
+    def __make_order_item_correction(self, item, producers_ids):
         """Make order item correction."""
         correction = {}
         self.get_product_data(item["variant"]["product_name"])
@@ -179,17 +179,6 @@ class XMLOrder(OFNData):
             correction["tax_category"] = "MwSt.-"
             correction["tax_rate"] = "0.00"
 
-        # Get EAN from google sheet
-        found_sku = eans.loc[eans["sku"] == item["variant"]["sku"]]
-        if not found_sku.empty:
-            found_ean = found_sku.iloc[0]["EAN"]
-            if found_ean == "":
-                correction["ean"] = item["variant"]["sku"]
-            else:
-                correction["ean"] = found_ean
-        else:
-            correction["ean"] = item["variant"]["sku"]
-
         # Fix product display name
         if item["variant"]["product_name"] == item["variant"]["name_to_display"]:
             correction[
@@ -202,13 +191,13 @@ class XMLOrder(OFNData):
 
         return correction
 
-    def add_xml_body(self, producers_ids, eans):
+    def add_xml_body(self, producers_ids):
         """Iterate through products."""
         print("Products:")
         skus_wrong_format = []
         for count, item in enumerate(self.order_data["line_items"], 1):
             print(item["variant"]["sku"])
-            correction = self.__make_order_item_correction(item, producers_ids, eans)
+            correction = self.__make_order_item_correction(item, producers_ids)
 
             # Get all skus with wrong format
             if not re.match(r"\b\w{3}\-\w{3}\-\d{3,}\b", item["variant"]["sku"]):
