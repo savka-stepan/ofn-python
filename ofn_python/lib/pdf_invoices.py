@@ -119,7 +119,7 @@ class PDFInvoice(OFNData):
             tax_rate_3 = "10.70"
 
         items_count = 0
-        not_found_products = []
+        # not_found_products = []
         for count, i in enumerate(self.order_data["line_items"]):
             product_name = i["variant"]["product_name"]
             sku = i["variant"]["sku"]
@@ -192,31 +192,32 @@ class PDFInvoice(OFNData):
             if product_data:
                 tax_category_id = product_data["tax_category_id"]
                 producer_name = product_data["master"]["producer_name"]
-                print(f"Tax category {tax_category_id}, Producer name {producer_name}")
-
-                if tax_category_id == 1:
-                    tax_rate = tax_rate_1
-                elif tax_category_id == 2:
-                    tax_rate = tax_rate_2
-                elif tax_category_id == 3:
-                    tax_rate = tax_rate_3
-                else:
-                    tax_rate = "0.00"
-
-                if tax_rate != "0.00":
-                    amounts = {
-                        "tax_amount": total_price
-                        * (1 - 1 / (1 + float(tax_rate) / 100.0)),
-                        "total_price": total_price,
-                    }
-
-                    if tax_rate in self.tax_rates.keys():
-                        self.tax_rates[tax_rate].append(amounts)
-                    else:
-                        self.tax_rates[tax_rate] = [amounts]
-
             else:
-                not_found_products.append(product_name)
+                tax_category_id = 2
+                # not_found_products.append(product_name)
+
+            print(f"Tax category {tax_category_id}, Producer name {producer_name}")
+
+            if tax_category_id == 1:
+                tax_rate = tax_rate_1
+            elif tax_category_id == 2:
+                tax_rate = tax_rate_2
+            elif tax_category_id == 3:
+                tax_rate = tax_rate_3
+            else:
+                tax_rate = "0.00"
+
+            if tax_rate != "0.00":
+                amounts = {
+                    "tax_amount": total_price
+                    * (1 - 1 / (1 + float(tax_rate) / 100.0)),
+                    "total_price": total_price,
+                }
+
+                if tax_rate in self.tax_rates.keys():
+                    self.tax_rates[tax_rate].append(amounts)
+                else:
+                    self.tax_rates[tax_rate] = [amounts]
 
             cell1 = [
                 Paragraph(
@@ -244,12 +245,12 @@ class PDFInvoice(OFNData):
             )
             data.append([cell1, cell2, cell3, cell4, cell5])
 
-        if not_found_products:
-            send_email(
-                ["it@bauernbox.com", "savka.stepan.92@gmail.com"],
-                "Couldn't find product",
-                f'Order {self.order_data["number"]} products: {not_found_products}'
-            )
+        # if not_found_products:
+        #     send_email(
+        #         ["it@bauernbox.com", "savka.stepan.92@gmail.com"],
+        #         "Couldn't find product",
+        #         f'Order {self.order_data["number"]} products: {not_found_products}'
+        #     )
 
         shipping_tax_rate = tax_rate_1
         for adjustment in self.order_data["adjustments"]:
@@ -313,10 +314,15 @@ class PDFInvoice(OFNData):
         tax_amount_10 = 0.0
         tax_amount_16 = 0.0
         tax_amount_19 = 0.0
+        net_amount_5 = 0.0
+        net_amount_7 = 0.0
+        net_amount_10 = 0.0
+        net_amount_16 = 0.0
+        net_amount_19 = 0.0
         for key, value in self.tax_rates.items():
             tax_total_amount = round(sum([d["tax_amount"] for d in value]), 2)
-            total_amount_without_tax = (
-                sum([d["total_price"] for d in value]) - tax_total_amount
+            total_amount_without_tax = round(
+                sum([d["total_price"] for d in value]) - tax_total_amount, 2
             )
             p1 = Paragraph(f"", styles["Normal"])
             p2 = Paragraph(
@@ -331,15 +337,20 @@ class PDFInvoice(OFNData):
             taxes_total_amount += tax_total_amount
 
             if key == "5.00":
-                tax_amount_5 = round(sum([d["tax_amount"] for d in value]), 2)
+                tax_amount_5 = tax_total_amount
+                net_amount_5 = total_amount_without_tax
             if key == "7.00":
-                tax_amount_7 = round(sum([d["tax_amount"] for d in value]), 2)
+                tax_amount_7 = tax_total_amount
+                net_amount_7 = total_amount_without_tax
             if key == "10.70":
-                tax_amount_10 = round(sum([d["tax_amount"] for d in value]), 2)
+                tax_amount_10 = tax_total_amount
+                net_amount_10 = total_amount_without_tax
             if key == "16.00":
-                tax_amount_16 = round(sum([d["tax_amount"] for d in value]), 2)
+                tax_amount_16 = tax_total_amount
+                net_amount_16 = total_amount_without_tax
             if key == "19.00":
-                tax_amount_19 = round(sum([d["tax_amount"] for d in value]), 2)
+                tax_amount_19 = tax_total_amount
+                net_amount_19 = total_amount_without_tax
 
         p1 = Paragraph(f"", styles["Normal"])
         p2 = Paragraph(
@@ -357,7 +368,14 @@ class PDFInvoice(OFNData):
         self.body.append(t)
         self.body.append(Spacer(1, 24))
 
-        return (tax_amount_5, tax_amount_7, tax_amount_10, tax_amount_16, tax_amount_19, taxes_total_amount)
+        return (
+            (tax_amount_5, net_amount_5),
+            (tax_amount_7, net_amount_7),
+            (tax_amount_10, net_amount_10),
+            (tax_amount_16, net_amount_16),
+            (tax_amount_19, net_amount_19),
+            taxes_total_amount
+        )
 
     def add_footer(self, styles):
         """Add footer section."""
