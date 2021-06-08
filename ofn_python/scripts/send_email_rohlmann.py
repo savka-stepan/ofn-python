@@ -23,7 +23,9 @@ from ofn_python.lib.common.core import OFNData
 
 
 def run():
-    today = dt.datetime.today().date()
+    current_time = dt.datetime.today()
+    today = current_time.date()
+    yesterday = (current_time - dt.timedelta(days=1)).date()
     server_name = "https://openfoodnetwork.de"
     headers = {
         "Accept": "application/json;charset=UTF-8",
@@ -89,24 +91,42 @@ def run():
             ofn_data.get_order_data(order.number)
 
             for item in ofn_data.order_data["line_items"]:
-                ofn_data.get_product_data(item["variant"]["product_name"])
+                product_name = item["variant"]["product_name"]
+                sku = item["variant"]["sku"]
+
+                if product_name == "Feldsalat ":
+                    ofn_data.get_product_data_cont(product_name)
+
+                    if len(ofn_data.product_data["products"]) > 1:
+                        variant_data = ofn_data.get_variants_by_sku(sku)
+
+                        for vd in variant_data:
+                            ofn_data.get_product_data_by_variant_id(vd["id"])
+
+                            if ofn_data.product_data["products"]:
+                                break
+
+                else:
+                    ofn_data.get_product_data(product_name)
 
                 if not ofn_data.product_data["products"]:
-                    variant_data = ofn_data.get_variants_by_sku(item["variant"]["sku"])
-                    
-                    try:
-                        variant_id = variant_data[0]["id"]
-                    except IndexError:
-                        variant_id = None
+                    ofn_data.get_product_data_cont(product_name)
 
-                    if variant_id:
-                        ofn_data.get_product_data_by_variant_id(variant_id)
+                    if len(ofn_data.product_data["products"]) > 1:
+                        variant_data = ofn_data.get_variants_by_sku(sku)
 
-                ofn_data.product_data["products"] = [
-                    i
-                    for i in ofn_data.product_data["products"]
-                    if i["producer_id"] in producers_ids
-                ]
+                        for vd in variant_data:
+                            ofn_data.get_product_data_by_variant_id(vd["id"])
+
+                            if ofn_data.product_data["products"]:
+                                break
+
+                if len(ofn_data.product_data["products"]) > 1:
+                    ofn_data.product_data["products"] = [
+                        i
+                        for i in ofn_data.product_data["products"]
+                        if i["producer_id"] in producers_ids
+                    ]
 
                 try:
                     product = ofn_data.product_data["products"][0]
@@ -114,7 +134,7 @@ def run():
                     product = None
 
                 if product:
-                    if product["master"]["producer_name"] == "Kräuterhof Rohlmann ":
+                    if product["producer_id"] == 90:
                         print(
                             "Kräuterhof Rohlmann",
                             item["variant"]["product_name"],
@@ -139,7 +159,7 @@ def run():
                         )
                         data_kr.append([p1, p2, p3, p4])
 
-                    elif product["master"]["producer_name"] == "Tollkötter Bäckerei ":
+                    elif product["producer_id"] == 97:
                         print(
                             "Tollkötter Bäckerei",
                             item["variant"]["product_name"],

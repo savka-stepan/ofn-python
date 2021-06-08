@@ -123,24 +123,42 @@ class XMLOrder(OFNData):
     def __make_order_item_correction(self, item, producers_ids):
         """Make order item correction."""
         correction = {}
-        self.get_product_data(item["variant"]["product_name"])
+        product_name = item["variant"]["product_name"]
+        sku = item["variant"]["sku"]
+
+        if product_name == "Feldsalat ":
+            self.get_product_data_cont(product_name)
+
+            if len(self.product_data["products"]) > 1:
+                variant_data = self.get_variants_by_sku(sku)
+
+                for vd in variant_data:
+                    self.get_product_data_by_variant_id(vd["id"])
+
+                    if self.product_data["products"]:
+                        break
+
+        else:
+            self.get_product_data(product_name)
 
         if not self.product_data["products"]:
-            variant_data = self.get_variants_by_sku(item["variant"]["sku"])
-            
-            try:
-                variant_id = variant_data[0]["id"]
-            except IndexError:
-                variant_id = None
+            self.get_product_data_cont(product_name)
 
-            if variant_id:
-                self.get_product_data_by_variant_id(variant_id)
+            if len(self.product_data["products"]) > 1:
+                variant_data = self.get_variants_by_sku(sku)
 
-        self.product_data["products"] = [
-            i
-            for i in self.product_data["products"]
-            if i["producer_id"] in producers_ids
-        ]
+                for vd in variant_data:
+                    self.get_product_data_by_variant_id(vd["id"])
+
+                    if self.product_data["products"]:
+                        break
+
+        if len(self.product_data["products"]) > 1:
+            self.product_data["products"] = [
+                i
+                for i in self.product_data["products"]
+                if i["producer_id"] in producers_ids
+            ]
 
         try:
             product = self.product_data["products"][0]
@@ -148,36 +166,31 @@ class XMLOrder(OFNData):
             product = None
 
         if product:
-            # Get manufacturer
-            correction["manufacturer_idref"] = product["producer_id"]
-            correction["manufacturer_pid"] = product["master"]["producer_name"]
-
-            # Get tax
+            manufacturer_idref = product["producer_id"]
+            manufacturer_pid = product["master"]["producer_name"]
             tax_category_id = product["tax_category_id"]
-
-            if tax_category_id == 1:
-                tax_category = "MwSt.-19"
-                tax_rate = "19.00"
-            elif tax_category_id == 2:
-                tax_category = "MwSt.-7"
-                tax_rate = "7.00"
-            elif tax_category_id == 3:
-                tax_category = "MwSt.-10"
-                tax_rate = "10.70"
-            else:
-                tax_category = "MwSt.-"
-                tax_rate = "0.00"
-
-            correction["tax_category"] = tax_category
-            correction["tax_rate"] = tax_rate
-
         else:
-            # Get manufacturer
-            correction["manufacturer_idref"] = ""
-            correction["manufacturer_pid"] = ""
-            # Get tax
-            correction["tax_category"] = "MwSt.-"
-            correction["tax_rate"] = "0.00"
+            tax_category_id = 2
+            manufacturer_idref = ""
+            manufacturer_pid = ""
+
+        if tax_category_id == 1:
+            tax_category = "MwSt.-19"
+            tax_rate = "19.00"
+        elif tax_category_id == 2:
+            tax_category = "MwSt.-7"
+            tax_rate = "7.00"
+        elif tax_category_id == 3:
+            tax_category = "MwSt.-10"
+            tax_rate = "10.70"
+        else:
+            tax_category = "MwSt.-"
+            tax_rate = "0.00"
+
+        correction["manufacturer_idref"] = manufacturer_idref
+        correction["manufacturer_pid"] = manufacturer_pid
+        correction["tax_category"] = tax_category
+        correction["tax_rate"] = tax_rate
 
         # Fix product display name
         if item["variant"]["product_name"] == item["variant"]["name_to_display"]:
@@ -223,7 +236,7 @@ class XMLOrder(OFNData):
     def send_email_wrong_sku_format(self, skus_wrong_format):
         """Send email with wrong sku format."""
         receivers = [
-            os.environ["EMAIL_OFN"],
+            os.environ.get("EMAIL_OFN"),
         ]
         subject = "SKU Fehler in Bauernbox"
         body = "Es gab ein paar Fehler mit:"
@@ -235,7 +248,7 @@ class XMLOrder(OFNData):
     def send_email_zip_not_in_range(self, order_no, delivery_zip):
         """Send email if zipcode not in certain range."""
         receivers = [
-            os.environ["EMAIL_OFN"],
+            os.environ.get("EMAIL_OFN"),
         ]
         subject = "Falsche Postleitzahl in Bauernbox"
         body = f"Bestellnummer {order_no}, Postleitzahl {delivery_zip}<br>bitte prüfen."
@@ -244,7 +257,7 @@ class XMLOrder(OFNData):
     def send_by_email(self, filename, attchmnt):
         """Send xml file by email."""
         receivers = [
-            os.environ["EMAIL_OPENTRANSORDERS"],
+            os.environ.get("EMAIL_OPENTRANSORDERS"),
         ]
         subject = "Opentransorders"
         body = "Opentransorders xml files:"
@@ -253,9 +266,9 @@ class XMLOrder(OFNData):
     def send_to_ftp_server(self, filename, attchmnt):
         """Send xml file to ftp server."""
         with ftplib.FTP(
-            os.environ["FTP_SERVER"],
-            os.environ["FTP_USERNAME"],
-            os.environ["FTP_PASSWORD"],
+            os.environ.get("FTP_SERVER"),
+            os.environ.get("FTP_USERNAME"),
+            os.environ.get("FTP_PASSWORD"),
         ) as ftp:
             ftp.storbinary(f"STOR orders/{filename}", io.BytesIO(attchmnt))
 

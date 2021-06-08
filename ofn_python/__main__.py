@@ -10,8 +10,8 @@ from ofn_python.scripts import (
 def main():
     # generate_xml.run([36,])
     # get_products.run()
-    generate_pdf_invoice.run()
-    # send_email_rohlmann.run()
+    # generate_pdf_invoice.run()
+    send_email_rohlmann.run()
     # update_stock_level.run()
 
 
