@@ -121,7 +121,7 @@ class XMLOrder(OFNData):
     def add_xml_header(self):
         self.xml_str = get_xml_header(self.order_data, self.header_correction)
 
-    def __get_product_details(self, item, producers_ids, data_kr, data_tb, styles):
+    def __get_product_details(self, item, producers_ids, pdf_orders, styles):
         """Make order item correction."""
         correction = {}
         product_name = item["variant"]["product_name"]
@@ -168,58 +168,36 @@ class XMLOrder(OFNData):
 
         if product:
             manufacturer_idref = product["producer_id"]
-            manufacturer_pid = product["master"]["producer_name"]
+            manufacturer_pid = product["master"]["producer_name"].strip()
             tax_category_id = product["tax_category_id"]
 
             # --- Special producers pdf generation
-            if product["producer_id"] == 90:
-                print(
-                    "Kräuterhof Rohlmann",
-                    item["variant"]["product_name"],
-                    item["quantity"],
-                    item["price"],
-                )
-                p1 = Paragraph(
-                    f'<font size="8">{item["variant"]["product_name"]} {item["variant"]["unit_to_display"]}</font>',
-                    styles["Normal"],
-                )
-                p2 = Paragraph(
-                    f'<font size="8">{item["variant"]["sku"]}</font>',
-                    styles["align_right"],
-                )
-                p3 = Paragraph(
-                    f'<font size="8">{item["quantity"]}</font>',
-                    styles["align_right"],
-                )
-                p4 = Paragraph(
-                    f'<font size="8">{item["price"]}</font>',
-                    styles["align_right"],
-                )
-                data_kr.append([p1, p2, p3, p4])
-            elif product["producer_id"] == 97:
-                print(
-                    "Tollkötter Bäckerei",
-                    item["variant"]["product_name"],
-                    item["quantity"],
-                    item["price"],
-                )
-                p1 = Paragraph(
-                    f'<font size="8">{item["variant"]["product_name"]} {item["variant"]["unit_to_display"]}</font>',
-                    styles["Normal"],
-                )
-                p2 = Paragraph(
-                    f'<font size="8">{item["variant"]["sku"]}</font>',
-                    styles["align_right"],
-                )
-                p3 = Paragraph(
-                    f'<font size="8">{item["quantity"]}</font>',
-                    styles["align_right"],
-                )
-                p4 = Paragraph(
-                    f'<font size="8">{item["price"]}</font>',
-                    styles["align_right"],
-                )
-                data_tb.append([p1, p2, p3, p4])
+            for pdf_order in pdf_orders:
+                if pdf_order.supplier_id == product["producer_id"]:
+                    print(
+                        manufacturer_pid,
+                        item["variant"]["product_name"],
+                        item["quantity"],
+                        item["price"],
+                    )
+                    p1 = Paragraph(
+                        f'<font size="8">{item["variant"]["product_name"]} {item["variant"]["unit_to_display"]}</font>',
+                        styles["Normal"],
+                    )
+                    p2 = Paragraph(
+                        f'<font size="8">{item["variant"]["sku"]}</font>',
+                        styles["align_right"],
+                    )
+                    p3 = Paragraph(
+                        f'<font size="8">{item["quantity"]}</font>',
+                        styles["align_right"],
+                    )
+                    p4 = Paragraph(
+                        f'<font size="8">{item["price"]}</font>',
+                        styles["align_right"],
+                    )
+                    pdf_order.data.append([p1, p2, p3, p4])
+                    pdf_order.supplier_name = manufacturer_pid
             # --- Special producers pdf generation
 
         else:
@@ -257,13 +235,13 @@ class XMLOrder(OFNData):
 
         return correction
 
-    def add_xml_body(self, producers_ids, data_kr, data_tb, styles):
+    def add_xml_body(self, producers_ids, pdf_orders, styles):
         """Iterate through products."""
         print("Products:")
         skus_wrong_format = []
         for count, item in enumerate(self.order_data["line_items"], 1):
             print(item["variant"]["sku"])
-            correction = self.__get_product_details(item, producers_ids, data_kr, data_tb, styles)
+            correction = self.__get_product_details(item, producers_ids, pdf_orders, styles)
 
             # Get all skus with wrong format
             if not re.match(r"\b\w{3}\-\w{3}\-\d{3,}\b", item["variant"]["sku"]):
