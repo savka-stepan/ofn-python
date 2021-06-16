@@ -35,10 +35,10 @@ class PDFOrder:
         p4 = Paragraph(f'<font size="8"><b>Price</b></font>', self.styles["align_right"])
         self.data = [[p1, p2, p3, p4]]
 
-    def add_table(self, order_no):
+    def add_table(self, order_no, customer_name, order_period):
         self.body.append(
             Paragraph(
-                f'<font size="12">Order {order_no}</font>', self.styles["Normal"]
+                f'<font size="12">{order_no}, {customer_name}, {order_period}</font>', self.styles["Normal"]
             )
         )
         self.body.append(Spacer(1, 12))
