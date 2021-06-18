@@ -58,4 +58,3 @@ class PDFOrder:
 
     def close_stream(self):
         self.stream.close()
-

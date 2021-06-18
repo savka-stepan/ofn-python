@@ -9,6 +9,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from oauth2client.service_account import ServiceAccountCredentials
+from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.discovery import build
 
 
 SCOPES = [
@@ -47,6 +49,20 @@ def get_data_from_google_sheet(
             data = pd.DataFrame(columns=columns)
 
     return data, sheet
+
+
+def store_to_gdrive(credentials_file, folder_id, filename, mimetype, fh):
+    """Function to upload file to google drive."""
+    CREDENTIALS_FILE = f'{os.environ["PATH_TO_OFN_PYTHON"]}/creds/{credentials_file}'
+    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_FILE, SCOPES)
+    service = build("drive", "v3", credentials=creds)
+    body = {
+        "name": filename,
+        "mimeType": mimetype,
+        "parents": [folder_id]
+    }
+    media_body = MediaIoBaseUpload(fh, mimetype=mimetype, resumable=True)
+    service.files().create(body=body, media_body=media_body).execute()
 
 
 def send_email(

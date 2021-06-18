@@ -11,6 +11,7 @@ pandas = "*"
 gspread = "*"
 oauth2client = "*"
 reportlab = "*"
+google-api-python-client = "*"
 
 [requires]
 python_version = "3.9"
