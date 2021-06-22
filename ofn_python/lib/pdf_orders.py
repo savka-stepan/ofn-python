@@ -29,16 +29,21 @@ class PDFOrder:
         self.styles = styles
 
     def add_table_header(self):
-        p1 = Paragraph(f'<font size="8"><b>Product name</b></font>', self.styles["Normal"])
+        p1 = Paragraph(
+            f'<font size="8"><b>Product name</b></font>', self.styles["Normal"]
+        )
         p2 = Paragraph(f'<font size="8"><b>SKU</b></font>', self.styles["align_right"])
         p3 = Paragraph(f'<font size="8"><b>Qty</b></font>', self.styles["align_right"])
-        p4 = Paragraph(f'<font size="8"><b>Price</b></font>', self.styles["align_right"])
+        p4 = Paragraph(
+            f'<font size="8"><b>Price</b></font>', self.styles["align_right"]
+        )
         self.data = [[p1, p2, p3, p4]]
 
     def add_table(self, order_no, customer_name, order_period):
         self.body.append(
             Paragraph(
-                f'<font size="12">{order_no}, {customer_name}, {order_period}</font>', self.styles["Normal"]
+                f'<font size="12">{order_no}, {customer_name}, {order_period}</font>',
+                self.styles["Normal"],
             )
         )
         self.body.append(Spacer(1, 12))

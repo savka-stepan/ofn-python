@@ -241,7 +241,9 @@ class XMLOrder(OFNData):
         skus_wrong_format = []
         for count, item in enumerate(self.order_data["line_items"], 1):
             print(item["variant"]["sku"])
-            correction = self.__get_product_details(item, producers_ids, pdf_orders, styles)
+            correction = self.__get_product_details(
+                item, producers_ids, pdf_orders, styles
+            )
 
             # Get all skus with wrong format
             if not re.match(r"\b\w{3}\-\w{3}\-\d{3,}\b", item["variant"]["sku"]):

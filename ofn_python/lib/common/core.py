@@ -23,7 +23,9 @@ class OFNData:
 
     def get_product_data_cont(self, product_name):
         """Get product details."""
-        url = f"{self.server_name}/api/products/bulk_products?q[name_cont]={product_name}"
+        url = (
+            f"{self.server_name}/api/products/bulk_products?q[name_cont]={product_name}"
+        )
         response = requests.get(url, headers=self.headers, params=self.params)
         self.product_data = response.json()
 

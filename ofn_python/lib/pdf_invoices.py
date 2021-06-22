@@ -209,8 +209,7 @@ class PDFInvoice(OFNData):
 
             if tax_rate != "0.00":
                 amounts = {
-                    "tax_amount": total_price
-                    * (1 - 1 / (1 + float(tax_rate) / 100.0)),
+                    "tax_amount": total_price * (1 - 1 / (1 + float(tax_rate) / 100.0)),
                     "total_price": total_price,
                 }
 
@@ -257,7 +256,8 @@ class PDFInvoice(OFNData):
             if adjustment["originator_type"] == "Spree::ShippingMethod":
                 shipping_amount = float(adjustment["amount"])
                 shipping_amounts = {
-                    "tax_amount": shipping_amount * (1 - 1 / (1 + float(shipping_tax_rate) / 100.0)),
+                    "tax_amount": shipping_amount
+                    * (1 - 1 / (1 + float(shipping_tax_rate) / 100.0)),
                     "total_price": shipping_amount,
                 }
 
@@ -273,7 +273,8 @@ class PDFInvoice(OFNData):
                 f21 = Paragraph(f"", styles["align_right"])
                 f31 = Paragraph(f"", styles["align_right"])
                 f41 = Paragraph(
-                    f'<font size="8">{round(shipping_amount, 2):.2f} €</font>', styles["align_right"]
+                    f'<font size="8">{round(shipping_amount, 2):.2f} €</font>',
+                    styles["align_right"],
                 )
                 f51 = Paragraph(
                     f'<font size="8">{round(float(shipping_tax_rate), 2):.2f} %</font>',
@@ -374,7 +375,7 @@ class PDFInvoice(OFNData):
             (tax_amount_10, net_amount_10),
             (tax_amount_16, net_amount_16),
             (tax_amount_19, net_amount_19),
-            taxes_total_amount
+            taxes_total_amount,
         )
 
     def add_footer(self, styles):
