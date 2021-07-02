@@ -70,7 +70,7 @@ def send_email(
     file_extension="xml",
     cc=None,
 ):
-    """General send email method."""
+    """General send email function."""
     smtp_server = os.environ.get("SMTP_SERVER")
     port = 465
     sender_email = os.environ.get("SMTP_SERVER_USER")
