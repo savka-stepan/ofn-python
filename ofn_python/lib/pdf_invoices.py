@@ -35,8 +35,8 @@ class PDFInvoice(OFNData):
         logo = Image(io.BytesIO(logo_response), inch, inch)
         p1 = Paragraph(
             f'<font size="10">{self.order_data["full_name"]}</font><br/>\
-        <font size="10">{self.order_data["ship_address"]["address1"]}</font><br/>\
-        <font size="10">{self.order_data["ship_address"]["zipcode"]} {self.order_data["ship_address"]["city"]}</font><br/>',
+        <font size="10">{self.order_data["bill_address"]["address1"]}</font><br/>\
+        <font size="10">{self.order_data["bill_address"]["zipcode"]} {self.order_data["bill_address"]["city"]}</font><br/>',
             styles["Normal"],
         )
         p2 = Paragraph(
